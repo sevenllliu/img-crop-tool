@@ -101,16 +101,16 @@ h1{font-size:19px;margin:0;letter-spacing:.6px;font-weight:600}
 .chip-btn.on{background:var(--soft);border-color:color-mix(in srgb,var(--brand) 45%,transparent);color:var(--brand);font-weight:600}
 
 /* ============ 拖放区 ============ */
-#drop{border:1.5px dashed var(--line2);border-radius:13px;padding:26px 18px;text-align:center;
+.dz{border:1.5px dashed var(--line2);border-radius:13px;padding:26px 18px;text-align:center;
   color:var(--sub);cursor:pointer;background:var(--panel2);transition:.18s;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:132px}
-#drop:hover{border-color:var(--brand);background:var(--soft)}
-#drop.over{border-color:var(--brand);background:var(--soft);transform:scale(1.008)}
-#drop .dz-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+.dz:hover{border-color:var(--brand);background:var(--soft)}
+.dz.over{border-color:var(--brand);background:var(--soft);transform:scale(1.008)}
+.dz .dz-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
   background:var(--soft);color:var(--brand)}
-#drop .dz-ic .ic{width:20px;height:20px}
-#drop .t1{color:var(--text);font-size:13.5px;font-weight:600}
-#drop .t2{font-size:11.5px;color:var(--dim)}
+.dz .dz-ic .ic{width:20px;height:20px}
+.dz .t1{color:var(--text);font-size:13.5px;font-weight:600}
+.dz .t2{font-size:11.5px;color:var(--dim)}
 
 /* ============ 分段 / 模式卡 ============ */
 .seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
@@ -242,6 +242,61 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .empty{color:var(--dim);text-align:center;padding:52px 0;display:flex;flex-direction:column;
   align-items:center;gap:11px;font-size:13px}
 .empty .ic{width:30px;height:30px;opacity:.4}
+
+/* ============ 大板块切换 ============ */
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;margin:0 0 16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}
+.tabs button{height:48px;border:1px solid transparent;border-radius:12px;background:transparent;
+  color:var(--sub);font-family:inherit;font-size:14px;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;justify-content:center;gap:10px;padding:0 10px}
+.tabs button .ic{width:19px;height:19px}
+.tabs button small{font-size:11px;opacity:.7;font-weight:400;letter-spacing:.2px}
+.tabs button:hover{color:var(--text);background:var(--panel2)}
+.tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:600;
+  box-shadow:0 12px 24px -13px color-mix(in srgb,var(--brand) 88%,transparent)}
+.tabs button.on .ic{stroke-width:1.9}
+@media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px}}
+
+/* ============ 压缩强度滑块 ============ */
+.lvrow{display:flex;align-items:center;gap:16px;flex:1;min-width:280px}
+.lvrow input[type=range]{flex:1;min-width:150px;width:auto;height:6px}
+.lvbox{min-width:132px;flex:none}
+.lvname{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--text)}
+.lvname .b{font-variant-numeric:tabular-nums;font-size:11px;padding:2px 7px;border-radius:6px;
+  background:var(--soft);color:var(--brand);font-weight:600}
+.lvdesc{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.5}
+.lvscale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);
+  margin-top:6px;padding:0 1px;letter-spacing:.2px;flex:1;min-width:280px}
+
+/* ============ 压缩结果 ============ */
+.pct{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:1.5px 7px;border-radius:6px;
+  font-weight:600;font-variant-numeric:tabular-nums}
+.pct.down{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pct.up{background:color-mix(in srgb,var(--warn) 17%,transparent);color:var(--warn)}
+.pct.flat{background:var(--panel3);color:var(--dim)}
+.cmp{position:relative;height:186px;display:flex;align-items:center;justify-content:center;padding:8px;
+  background:conic-gradient(var(--ck1) 0 25%,var(--ck2) 0 50%,var(--ck1) 0 75%,var(--ck2) 0) 0 0/16px 16px;
+  cursor:zoom-in;user-select:none}
+.cmp img{max-width:100%;max-height:170px;display:block;border-radius:5px;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
+.cmp .before,.cmp .after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px}
+.cmp .before{display:none}
+.cmp.hold .before{display:flex}
+.cmp.hold .after{visibility:hidden}
+.cmp .holdtip{position:absolute;right:9px;top:8px;background:rgba(10,13,18,.74);color:#e9edf5;
+  font-size:10.5px;padding:3px 8px;border-radius:6px;letter-spacing:.3px;display:inline-flex;
+  align-items:center;gap:5px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);
+  transition:.15s;opacity:.9}
+.cmp .holdtip .ic{width:12px;height:12px;opacity:.85}
+.cmp.hold .holdtip{background:var(--brand);border-color:transparent;color:#fff;opacity:1}
+.savebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);
+  padding:9px 12px;border-radius:11px;background:var(--soft);border:1px solid color-mix(in srgb,var(--brand) 22%,transparent);
+  margin-bottom:12px}
+.savebar b{color:var(--brand);font-variant-numeric:tabular-nums;font-weight:600}
+.savebar .ic{color:var(--brand);width:15px;height:15px}
+/* 压缩板块左栏：拖放区撑满，避免右栏内容多时左栏留白 */
+#view-comp .panel{display:flex;flex-direction:column}
+#view-comp .dz{flex:1}
 .hidden{display:none !important}
 
 /* ============ 说明折叠 ============ */
@@ -313,6 +368,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     <rect x="1.5" y="4.5" width="29" height="15" rx="2" fill="currentColor" stroke="none" opacity=".5"/>
     <path d="M5 12h22M8.5 8.8 5.2 12l3.3 3.2M23.5 8.8 26.8 12l-3.3 3.2"/>
   </symbol>
+
+  <!-- 压缩 -->
+  <symbol id="i-compress" viewBox="0 0 24 24"><path d="M4 8.5V5.5A1.5 1.5 0 0 1 5.5 4H8.5"/><path d="M15.5 4h3A1.5 1.5 0 0 1 20 5.5v3"/><path d="M20 15.5v3a1.5 1.5 0 0 1-1.5 1.5h-3"/><path d="M8.5 20H5.5A1.5 1.5 0 0 1 4 18.5v-3"/><path d="M12 7.6v8.8"/><path d="m9.1 13.5 2.9 2.9 2.9-2.9"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M10.6 6.3A9.4 9.4 0 0 1 12 6c5.8 0 9.5 6 9.5 6a17 17 0 0 1-2.6 3.2"/><path d="M6.5 7.9A16.7 16.7 0 0 0 2.5 12S6.2 18 12 18a9.3 9.3 0 0 0 3.4-.6"/><path d="M9.9 9.9a2.6 2.6 0 0 0 3.7 3.7"/></symbol>
 </svg>
 
 <div class="wrap">
@@ -321,13 +380,22 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     <div class="mark"><svg class="ic"><use href="#i-crop"/></svg></div>
     <div class="titles">
       <h1>图片处理</h1>
-      <p class="sub">高分辨率原图 → 原像素裁切出交付规格</p>
+      <p class="sub">裁切与压缩 · 全程在本机完成，不上传</p>
     </div>
     <div class="right">
       <span class="pill ok"><svg class="ic"><use href="#i-shield"/></svg>本地离线处理</span>
       <button class="iconbtn" id="themeBtn" data-tip="切换深浅色"><svg class="ic"><use href="#i-sun"/></svg></button>
     </div>
   </div>
+
+  <!-- ============ 大板块切换 ============ -->
+  <div class="tabs" id="tabs">
+    <button id="tab-crop" class="on"><svg class="ic"><use href="#i-crop"/></svg>图片裁剪<small>统一尺寸 · 原像素切图</small></button>
+    <button id="tab-comp"><svg class="ic"><use href="#i-compress"/></svg>图片压缩<small>尽量保清晰度 · 减小体积</small></button>
+  </div>
+
+  <!-- ==================== 板块一：图片裁剪 ==================== -->
+  <div class="view" id="view-crop">
 
   <!-- ============ 尺寸 + 拖入 ============ -->
   <div class="two">
@@ -369,7 +437,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         <span class="sp"></span>
         <span class="aux">支持整个文件夹拖入</span>
       </div>
-      <div id="drop">
+      <div id="drop" class="dz">
         <span class="dz-ic"><svg class="ic"><use href="#i-upload"/></svg></span>
         <span class="t1">拖入图片或文件夹</span>
         <span class="t2">或点击选择 · 支持 JPG / PNG / WEBP</span>
@@ -512,6 +580,130 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     <svg class="ic ic-lg"><use href="#i-image"/></svg>
     还没有图片 · 先在上方拖几张进来
   </div>
+
+  </div><!-- /view-crop -->
+
+  <!-- ==================== 板块二：图片压缩 ==================== -->
+  <div class="view hidden" id="view-comp">
+
+    <div class="two">
+      <!-- 加入图片 -->
+      <div class="panel">
+        <div class="phead">
+          <svg class="ic"><use href="#i-upload"/></svg>
+          <h2>加入图片</h2>
+          <span class="sp"></span>
+          <span class="aux">支持整个文件夹拖入</span>
+        </div>
+        <div id="cdrop" class="dz">
+          <span class="dz-ic"><svg class="ic"><use href="#i-upload"/></svg></span>
+          <span class="t1">拖入图片或文件夹</span>
+          <span class="t2">或点击选择 · 支持 JPG / PNG / WEBP</span>
+        </div>
+      </div>
+
+      <!-- 压缩设置 -->
+      <div class="panel">
+        <div class="phead">
+          <svg class="ic"><use href="#i-compress"/></svg>
+          <h2>压缩设置</h2>
+          <span class="sp"></span>
+          <span class="aux clickable" id="chelpBtn"><svg class="ic" style="width:13px;height:13px"><use href="#i-info"/></svg>详细说明</span>
+        </div>
+
+        <div class="ctl">
+          <div class="line">
+            <span class="lb">压缩程度</span>
+            <div class="lvrow">
+              <input type="range" id="cq" min="0" max="100" value="45">
+              <div class="lvbox">
+                <div class="lvname"><span id="cqn">均衡</span><span class="b" id="cqv">45</span></div>
+                <div class="lvdesc" id="cqd">画质基本无损，体积明显下降</div>
+              </div>
+            </div>
+          </div>
+          <div class="line" style="margin-top:-2px">
+            <span class="lb"></span>
+            <div class="lvscale">
+              <span>几乎无损</span><span>轻微</span><span>均衡</span><span>强力</span><span>极限</span>
+            </div>
+          </div>
+
+          <div class="line">
+            <span class="lb">输出格式</span>
+            <div class="seg" id="cfmtSeg">
+              <button data-v="auto">跟随原图</button>
+              <button data-v="webp" data-tip="同样清晰度下比 JPG 再小 25–35%，推荐">WEBP 推荐</button>
+              <button data-v="jpg">JPG</button>
+              <button data-v="png">PNG</button>
+            </div>
+            <span class="lb" style="min-width:0"><svg class="ic" style="display:inline;vertical-align:-2px"><use href="#i-frame"/></svg> 最长边</span>
+            <div class="field" style="width:120px">
+              <input type="number" id="cmax" value="0" min="0" aria-label="最长边">
+              <span class="u">px</span>
+            </div>
+          </div>
+          <div class="chips" id="cmaxChips">
+            <button class="chip-btn" data-v="0">保持原尺寸</button>
+            <button class="chip-btn" data-v="4096">4096</button>
+            <button class="chip-btn" data-v="2560">2560</button>
+            <button class="chip-btn" data-v="1920">1920</button>
+            <button class="chip-btn" data-v="1280">1280</button>
+            <span class="aux" style="font-size:11.5px;color:var(--dim);align-self:center">填 0 = 不改尺寸</span>
+          </div>
+
+          <div class="line" style="margin-top:2px">
+            <span class="lb">保底</span>
+            <label class="switch" data-tip="原图已经压得很狠时，重压反而会变大，这种直接留原图">
+              <input type="checkbox" id="ckeep" checked>
+              <span class="track"></span>
+              <span class="lb">压完没变小的，保留原图</span>
+            </label>
+          </div>
+        </div>
+
+        <select id="cfmt" class="hidden">
+          <option value="auto" selected></option><option value="webp"></option>
+          <option value="jpg"></option><option value="png"></option>
+        </select>
+
+        <div class="help" id="chelp">
+          <div class="help-in">
+            压缩只做两件事：<b>去掉照片里自带的拍摄信息</b>（相机型号、定位、缩略图等），以及<b>重新编码</b>。
+            默认<b>不缩放尺寸</b>，所以清晰度只取决于「压缩程度」这一根滑块。
+            <div class="kv">
+              <span>压缩程度</span><span>0–15 几乎无损 ／ 16–35 轻微 ／ 36–60 均衡（推荐）／ 61–80 强力 ／ 81–100 极限</span>
+              <span>输出格式</span><span>WEBP 在同等清晰度下通常比 JPG 再小 25–35%；需要交付通用性就选 JPG</span>
+              <span>最长边</span><span>填 0 完全不改尺寸；填数字则按比例缩到该边长以内，这是减体积最猛的手段</span>
+              <span>看差别</span><span>结果图<b>按住鼠标</b>可切换看原图，松手回到压缩后，方便判断画质</span>
+              <span>PNG 注意</span><span>PNG 是无损格式，选「跟随原图」基本压不动；想变小请改选 JPG 或 WEBP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="savebar hidden" id="csum">
+      <svg class="ic"><use href="#i-compress"/></svg>
+      <span id="csumText"></span>
+    </div>
+
+    <div class="toolbar">
+      <span class="dot" id="cdot"></span>
+      <span class="count" id="cstat">还没有图片</span>
+      <span class="sp"></span>
+      <button class="ghost" id="credo" disabled><svg class="ic"><use href="#i-refresh"/></svg>重新压缩</button>
+      <button class="primary" id="cdl" disabled><svg class="ic"><use href="#i-archive"/></svg>打包下载</button>
+      <button class="ghost" id="cclear" disabled data-tip="清空全部图片"><svg class="ic"><use href="#i-trash"/></svg></button>
+    </div>
+
+    <div class="grid" id="cgrid"></div>
+    <div class="empty" id="cempty">
+      <svg class="ic ic-lg"><use href="#i-compress"/></svg>
+      还没有图片 · 先在上方拖几张进来
+    </div>
+
+  </div><!-- /view-comp -->
 </div>
 
 <script>
@@ -843,6 +1035,216 @@ function draw(){
   });
 }
 
+/* ============ 板块切换 ============ */
+let TAB = 'crop';
+const runProcess = () => { if(TAB === 'comp') compressAll(); else processAll(); };
+
+/* ==================== 板块二：图片压缩 ==================== */
+/* 压缩强度(0–100) → 编码质量：前段很保守，保证"尽量不改变清晰度" */
+const QTAB = [[0,0.97],[25,0.93],[50,0.86],[75,0.74],[88,0.65],[100,0.52]];
+function qOfLevel(lv){
+  lv = Math.max(0, Math.min(100, parseInt(lv) || 0));
+  for(let i = 0; i < QTAB.length - 1; i++){
+    const a = QTAB[i], b = QTAB[i+1];
+    if(lv <= b[0]) return a[1] + (b[1]-a[1]) * (lv-a[0]) / (b[0]-a[0]);
+  }
+  return QTAB[QTAB.length-1][1];
+}
+const LVS = [
+  {max:15,  n:'几乎无损', d:'画质看不出差别，主要靠清掉拍摄信息瘦身'},
+  {max:35,  n:'轻微',     d:'与肉眼几乎一致，要求高的交付图用这档'},
+  {max:60,  n:'均衡',     d:'画质基本无损，体积明显下降，最常用'},
+  {max:80,  n:'强力',     d:'放大看细节会变软，适合预览图 / 网页用图'},
+  {max:100, n:'极限',     d:'细节损失明显，只在追求极小文件时使用'}
+];
+function lvInfo(lv){ for(const x of LVS) if(lv <= x.max) return x; return LVS[LVS.length-1]; }
+
+/* 浏览器画布有尺寸上限, 超大图先兜底缩一下, 免得导出空白 */
+function safeScale(w, h){
+  const cap = 10000, area = 60e6;
+  let s = 1;
+  if(Math.max(w, h) > cap) s = Math.min(s, cap / Math.max(w, h));
+  if(w * h > area) s = Math.min(s, Math.sqrt(area / (w * h)));
+  return s;
+}
+
+function thumbFromImage(im, limit){
+  const w = im.naturalWidth, h = im.naturalHeight;
+  const s = Math.min(1, limit / Math.max(w, h));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w*s)); c.height = Math.max(1, Math.round(h*s));
+  const cx = c.getContext('2d');
+  cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+  cx.drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL(canvasHasAlpha(c) ? 'image/png' : 'image/jpeg', 0.82);
+}
+
+function ccfg(){
+  return {
+    level: parseInt($('cq').value) || 0,
+    fmt:   $('cfmt').value,
+    max:   Math.max(0, parseInt($('cmax').value) || 0),
+    keep:  $('ckeep').checked
+  };
+}
+
+async function compressOne(item, c){
+  const im = await loadImage(item.file);
+  const w0 = im.naturalWidth, h0 = im.naturalHeight;
+
+  let s = safeScale(w0, h0);
+  if(c.max > 0 && Math.max(w0, h0) > c.max) s = Math.min(s, c.max / Math.max(w0, h0));
+  const w = Math.max(1, Math.round(w0*s)), h = Math.max(1, Math.round(h0*s));
+
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+
+  const fmt = fmtOf(item.name, c.fmt);
+  const srcExt = (item.name.split('.').pop() || '').toLowerCase();
+  ctx.drawImage(im, 0, 0, w, h);
+  /* 转 JPG 时若有透明区先垫白底, 不然透明会被压成黑色 */
+  if(fmt === 'jpg' && (srcExt === 'png' || srcExt === 'webp') && canvasHasAlpha(cv)){
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(im, 0, 0, w, h);
+  }
+
+  let q = qOfLevel(c.level);
+  if(fmt === 'webp') q = Math.max(0.4, q - 0.03);   /* WEBP 同画质能再低一点 */
+  const blob = await toBlob(cv, fmt, fmt === 'png' ? undefined : q);
+
+  const origSize = item.file.size || 0;
+  const kept = c.keep && origSize > 0 && blob.size >= origSize;
+  const oThumb = thumbFromImage(im, 320);
+
+  return {
+    name: item.name,
+    outName: kept ? item.name : outName(item.name, fmt),
+    blob: kept ? item.file : blob,
+    thumb: kept ? '' : thumbOf(cv, 320),
+    origThumb: oThumb,
+    w, h, w0, h0,
+    fmt,
+    q: fmt === 'png' ? 1 : q,
+    size: kept ? origSize : blob.size,
+    origSize,
+    kept,
+    scaled: (w !== w0 || h !== h0),
+    err: false, note: ''
+  };
+}
+
+let compPct = 0;
+async function compressAll(){
+  if(busy) return;
+  if(!files.length){
+    results = [];
+    $('cgrid').innerHTML = '';
+    $('csum').classList.add('hidden');
+    $('cempty').classList.remove('hidden');
+    $('cdl').disabled = $('cclear').disabled = $('credo').disabled = true;
+    $('cstat').textContent = '还没有图片';
+    $('cdot').className = 'dot';
+    return;
+  }
+  busy = true;
+  $('cdot').className = 'dot busy';
+  $('credo').disabled = true;
+  $('cstat').innerHTML = `压缩中 <b>${files.length}</b> 张`;
+  const c = ccfg();
+  const out = [];
+  for(const item of files){
+    try{
+      out.push(await compressOne(item, c));
+    }catch(e){
+      out.push({name:item.name, outName:item.name, blob:null, thumb:'', origThumb:'',
+                w:0, h:0, w0:0, h0:0, fmt:'', q:1, size:0,
+                origSize:item.file.size || 0, kept:false, scaled:false,
+                err:true, note:'压缩失败：' + (e.message || '读不了这张图')});
+    }
+  }
+  dedupe(out);
+  results = out;
+  drawComp();
+
+  const ok  = out.filter(r => r.blob);
+  const bad = out.filter(r => r.err).length;
+  const s0 = ok.reduce((s, r) => s + (r.origSize || 0), 0);
+  const s1 = ok.reduce((s, r) => s + (r.size || 0), 0);
+  compPct = s0 ? (1 - s1/s0) * 100 : 0;
+
+  if(ok.length){
+    $('csum').classList.remove('hidden');
+    let tip;
+    if(compPct > 8){
+      tip = `省下 <b>${fmtSize(s0 - s1)}（${compPct.toFixed(0)}%）</b>`;
+    }else if(out.some(r => !r.err && r.fmt === 'png')){
+      tip = `<span style="color:var(--warn)">几乎没变小 · PNG 本身是无损格式，把输出格式换成 <b>WEBP</b> 或 <b>JPG</b> 才会明显瘦身</span>`;
+    }else{
+      tip = `<span style="color:var(--warn)">几乎没变小 · 可以再调高压缩程度，或限制最长边</span>`;
+    }
+    $('csumText').innerHTML = `原共 <b>${fmtSize(s0)}</b> → 压缩后 <b>${fmtSize(s1)}</b>　${tip}`;
+  }else{
+    $('csum').classList.add('hidden');
+  }
+
+  $('cstat').innerHTML = `共 <b>${out.length}</b> 张` + (bad ? `　<b style="color:var(--warn)">${bad} 张失败</b>` : '　已就绪');
+  $('cdl').disabled = $('cclear').disabled = $('credo').disabled = false;
+  $('cdot').className = 'dot ' + (bad ? 'busy' : 'ready');
+  busy = false;
+}
+
+function drawComp(){
+  $('cempty').classList.toggle('hidden', results.length > 0);
+  $('cgrid').innerHTML = results.map((r, i) => {
+    const after = r.thumb || r.origThumb || '';
+    const pct = r.origSize ? (1 - r.size / r.origSize) * 100 : 0;
+    const cls = r.err ? 'flat' : (pct > 0.5 ? 'down' : (pct < -0.5 ? 'up' : 'flat'));
+    const pctTxt = r.err ? '—'
+      : pct > 0.5 ? '↓ ' + pct.toFixed(0) + '%'
+      : pct < -0.5 ? '↑ ' + Math.abs(pct).toFixed(0) + '%' : '持平';
+    const noteTxt = r.err ? esc(r.note)
+      : r.kept ? '原图已经够小，保留原样'
+      : r.fmt === 'png' ? 'PNG 无损重编码（想变小请选 JPG / WEBP）'
+      : `编码质量 ${Math.round(r.q*100)} · ${String(r.fmt).toUpperCase()}`;
+    const tagTxt = r.err ? '失败' : (r.kept ? '已保留原图' : '压缩后');
+    return `
+    <div class="item">
+      <div class="cmp" data-c="${i}">
+        <div class="after">${after ? `<img src="${after}" alt="">` : '<span style="color:var(--dim);font-size:12px">无预览</span>'}</div>
+        ${r.origThumb ? `<div class="before"><img src="${r.origThumb}" alt=""></div>
+        <span class="holdtip"><svg class="ic"><use href="#i-eye"/></svg>按住看原图</span>` : ''}
+        <span class="tag"><svg class="ic"><use href="#i-compress"/></svg>${tagTxt}</span>
+      </div>
+      <div class="meta">
+        <div class="nm" title="${esc(r.outName)}">${esc(r.outName)}</div>
+        <div class="chips-i">
+          <span class="chip-i"><svg class="ic"><use href="#i-file"/></svg>
+            <span class="num"><b>${fmtSize(r.origSize)}</b> → <b>${fmtSize(r.size)}</b> <span class="pct ${cls}">${pctTxt}</span></span></span>
+          <span class="chip-i"><svg class="ic"><use href="#i-frame"/></svg>
+            <span class="num">${r.scaled ? `<b>${r.w0}×${r.h0}</b> → <b>${r.w}×${r.h}</b>` : `尺寸不变 <b>${r.w}×${r.h}</b>`}</span></span>
+          <span class="chip-i ${r.err ? 'warn' : ''}"><svg class="ic"><use href="#${r.err ? 'i-alert' : 'i-sliders'}"/></svg><span>${noteTxt}</span></span>
+        </div>
+      </div>
+      <div class="act">${r.blob ? `<button class="ghost" data-i="${i}"><svg class="ic"><use href="#i-download"/></svg>下载这张</button>` : ''}</div>
+    </div>`;
+  }).join('');
+
+  $('cgrid').querySelectorAll('button[data-i]').forEach(b => {
+    b.onclick = () => saveBlob(results[+b.dataset.i].blob, results[+b.dataset.i].outName);
+  });
+  /* 按住看原图 */
+  $('cgrid').querySelectorAll('.cmp').forEach(box => {
+    const on  = e => { e.preventDefault(); box.classList.add('hold'); };
+    const off = () => box.classList.remove('hold');
+    box.addEventListener('pointerdown', on);
+    box.addEventListener('pointerup', off);
+    box.addEventListener('pointerleave', off);
+    box.addEventListener('pointercancel', off);
+  });
+}
+
 /* ============ 下载 ============ */
 function saveBlob(blob, name){
   const a = document.createElement('a');
@@ -923,6 +1325,15 @@ $('dl').onclick = async () => {
   $('stat').innerHTML = `已打包 <b>${ok.length}</b> 张，开始下载`;
 };
 
+$('cdl').onclick = async () => {
+  const ok = results.filter(r => r.blob);
+  if(!ok.length) return;
+  $('cstat').textContent = '正在打包…';
+  const zip = await buildZip(ok);
+  saveBlob(zip, compPct > 0.5 ? `图片_压缩_省${compPct.toFixed(0)}%.zip` : '图片_压缩.zip');
+  $('cstat').innerHTML = `已打包 <b>${ok.length}</b> 张，开始下载`;
+};
+
 /* ============ 输入 ============ */
 function add(list){
   let n = 0;
@@ -932,21 +1343,20 @@ function add(list){
     files.push({file:f, name:f.name});
     n++;
   }
-  if(n){ scheduleSaveFiles(); processAll(); }
-  else if(list.length) $('stat').textContent = '这些不是图片文件';
+  if(n){ scheduleSaveFiles(); runProcess(); }
+  else if(list.length){
+    if(TAB === 'comp') $('cstat').textContent = '这些不是图片文件';
+    else $('stat').textContent = '这些不是图片文件';
+  }
 }
 
-$('drop').onclick = () => $('file').click();
+/* 两个板块共用一个隐藏的 file input */
+$('drop').onclick  = () => $('file').click();
+$('cdrop').onclick = () => $('file').click();
 $('file').onchange = e => { add(e.target.files); e.target.value = ''; };
 $('folder').onchange = e => { add(e.target.files); e.target.value = ''; };
 
-['dragenter','dragover'].forEach(t => $('drop').addEventListener(t, e => {
-  e.preventDefault(); $('drop').classList.add('over');
-}));
-['dragleave','drop'].forEach(t => $('drop').addEventListener(t, e => {
-  e.preventDefault(); $('drop').classList.remove('over');
-}));
-$('drop').addEventListener('drop', async e => {
+async function dropHandle(e){
   const items = [...(e.dataTransfer.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
   if(items.length && items.some(it => it.isDirectory)){
     const got = [];
@@ -955,6 +1365,15 @@ $('drop').addEventListener('drop', async e => {
     return;
   }
   add([...(e.dataTransfer.files || [])]);
+}
+['drop','cdrop'].forEach(id => {
+  ['dragenter','dragover'].forEach(t => $(id).addEventListener(t, e => {
+    e.preventDefault(); $(id).classList.add('over');
+  }));
+  ['dragleave','drop'].forEach(t => $(id).addEventListener(t, e => {
+    e.preventDefault(); $(id).classList.remove('over');
+  }));
+  $(id).addEventListener('drop', dropHandle);
 });
 
 function walk(entry, out){
@@ -983,13 +1402,26 @@ function syncUI(){
   syncGroup('anchorPad', 'anchor');
   syncGroup('bgSeg', 'bg');
   syncGroup('fmtSeg', 'fmt');
+  syncGroup('cfmtSeg', 'cfmt');
   syncPresetChips();
+  syncCMaxChips();
   $('bgColorGrp').classList.toggle('dim-off', $('bg').value !== 'custom');
   $('bgColorGrp').querySelector('.sw').style.background = $('bgColor').value;
 }
 function syncPresetChips(){
   const cur = `${$('tw').value}x${$('th').value}`;
   $('presetChips').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+}
+function syncCMaxChips(){
+  const cur = String(Math.max(0, parseInt($('cmax').value) || 0));
+  $('cmaxChips').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+}
+function syncCq(){
+  const lv = parseInt($('cq').value) || 0;
+  const info = lvInfo(lv);
+  $('cqn').textContent = info.n;
+  $('cqd').textContent = info.d;
+  $('cqv').textContent = lv;
 }
 function bindGroup(wrapId, selId){
   $(wrapId).addEventListener('click', e => {
@@ -1020,7 +1452,7 @@ $('presetChips').addEventListener('click', e => {
 
 /* ============ 设置记忆（刷新后保持） ============ */
 const LS_KEY = 'imgCropSettings_v1';
-const REMEMBER = ['tw','th','mode','anchor','bg','bgColor','fmt','q'];
+const REMEMBER = ['tw','th','mode','anchor','bg','bgColor','fmt','q','cq','cfmt','cmax'];
 
 function saveSettings(){
   if(SHARE) return;                 // 无痕模式不写本机
@@ -1028,7 +1460,9 @@ function saveSettings(){
     const s = {};
     REMEMBER.forEach(id => s[id] = $(id).value);
     s.showOv = $('showOv').checked;
-    s.theme = document.documentElement.dataset.theme;
+    s.ckeep  = $('ckeep').checked;
+    s.tab    = TAB;
+    s.theme  = document.documentElement.dataset.theme;
     localStorage.setItem(LS_KEY, JSON.stringify(s));
   }catch(e){}
 }
@@ -1047,6 +1481,8 @@ function loadSettings(){
   };
   REMEMBER.forEach(id => setVal(id, s[id]));
   if(typeof s.showOv === 'boolean') $('showOv').checked = s.showOv;
+  if(typeof s.ckeep === 'boolean')  $('ckeep').checked  = s.ckeep;
+  if(s.tab === 'comp') TAB = 'comp';
   if(s.theme === 'light') setTheme('light');   // 只恢复浅色；以前存过深色的这次也回到浅色
   return true;
 }
@@ -1140,6 +1576,30 @@ $('th').addEventListener('input', () => { syncPreset(); syncPresetChips(); saveS
 $('q').addEventListener('input', () => { $('qv').textContent = $('q').value; });
 $('q').addEventListener('change', onSettingChange);
 
+/* ---- 压缩板块联动 ---- */
+let ctimer = null;
+const cRefresh = () => { clearTimeout(ctimer); ctimer = setTimeout(compressAll, 260); };
+const cChange = () => { saveSettings(); cRefresh(); };
+
+$('cq').addEventListener('input', () => { syncCq(); saveSettings(); cRefresh(); });
+$('cmax').addEventListener('input', () => { syncCMaxChips(); saveSettings(); cRefresh(); });
+$('ckeep').addEventListener('change', cChange);
+$('cfmtSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]');
+  if(!b) return;
+  $('cfmt').value = b.dataset.v;
+  syncUI(); cChange();
+});
+$('cmaxChips').addEventListener('click', e => {
+  const b = e.target.closest('[data-v]');
+  if(!b) return;
+  $('cmax').value = b.dataset.v;
+  syncCMaxChips(); cChange();
+});
+$('credo').onclick  = () => compressAll();
+$('cclear').onclick = () => clearAll();
+$('chelpBtn').onclick = () => $('chelp').classList.toggle('open');
+
 $('preset').onchange = () => {
   const [w, h] = $('preset').value.split('x');
   $('tw').value = w; $('th').value = h;
@@ -1151,12 +1611,30 @@ function syncPreset(){
   $('preset').value = opts.includes(cur) ? cur : '';
 }
 
-$('clear').onclick = async () => {
+async function clearAll(){
   files = []; results = [];
   await idbClear();
-  processAll();
-};
-$('redo').onclick = () => processAll();
+  /* 两个板块的展示一起清掉，切过去不会看到上一次的残留 */
+  $('grid').innerHTML = ''; $('cgrid').innerHTML = '';
+  $('empty').classList.remove('hidden'); $('cempty').classList.remove('hidden');
+  $('csum').classList.add('hidden');
+  runProcess();
+}
+$('clear').onclick  = clearAll;
+$('redo').onclick   = () => processAll();
+
+/* 大板块切换 */
+function setTab(t){
+  TAB = t;
+  $('tab-crop').classList.toggle('on', t === 'crop');
+  $('tab-comp').classList.toggle('on', t === 'comp');
+  $('view-crop').classList.toggle('hidden', t !== 'crop');
+  $('view-comp').classList.toggle('hidden', t !== 'comp');
+  saveSettings();
+  runProcess();
+}
+$('tab-crop').onclick = () => setTab('crop');
+$('tab-comp').onclick = () => setTab('comp');
 
 /* 说明折叠 */
 $('helpBtn').onclick = () => $('help').classList.toggle('open');
@@ -1166,7 +1644,9 @@ $('helpBtn').onclick = () => $('help').classList.toggle('open');
   setTheme('light');
   const restored = SHARE ? false : loadSettings();   // 无痕模式不读本机
   $('qv').textContent = $('q').value;
+  syncCq();
   syncUI();
+  setTab(TAB);
 
   let rec = [];
   if(!SHARE){ try{ rec = await idbLoad(); }catch(e){ rec = []; } }
@@ -1175,10 +1655,12 @@ $('helpBtn').onclick = () => $('help').classList.toggle('open');
     files = rec.map(r => (r.blob instanceof File)
       ? r.blob
       : new File([r.blob], r.name || 'image.png', {type:(r.blob && r.blob.type) || 'image/png'}));
-    $('stat').innerHTML = `正在恢复 <b>${files.length}</b> 张图…`;
-    processAll();
+    const el = TAB === 'comp' ? $('cstat') : $('stat');
+    el.innerHTML = `正在恢复 <b>${files.length}</b> 张图…`;
+    runProcess();
   }else if(restored){
-    $('stat').textContent = '已恢复上次的参数设置';
+    const el = TAB === 'comp' ? $('cstat') : $('stat');
+    el.textContent = '已恢复上次的参数设置';
   }
 })();
 </script>
