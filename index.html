@@ -620,19 +620,20 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
         <div class="ctl">
           <div class="line">
-            <span class="lb">压缩程度</span>
+            <span class="lb">质量</span>
             <div class="lvrow">
-              <input type="range" id="cq" min="0" max="100" value="45">
+              <input type="range" id="cq" min="40" max="100" value="80">
               <div class="lvbox">
-                <div class="lvname"><span id="cqn">均衡</span><span class="b" id="cqv">45</span></div>
-                <div class="lvdesc" id="cqd">画质基本无损，体积明显下降</div>
+                <div class="lvname">质量 <span class="b" id="cqv">80</span></div>
+                <div class="lvdesc">文件大小 <b id="csize">—</b></div>
               </div>
+              <button class="chip-btn" id="creset" data-tip="恢复默认质量 80">重置</button>
             </div>
           </div>
           <div class="line" style="margin-top:-2px">
             <span class="lb"></span>
             <div class="lvscale">
-              <span>几乎无损</span><span>轻微</span><span>均衡</span><span>强力</span><span>极限</span>
+              <span>低质量 / 文件小</span><span>高质量 / 文件大</span>
             </div>
           </div>
 
@@ -670,7 +671,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
             压缩只做两件事：<b>去掉照片里自带的拍摄信息</b>（相机型号、定位、缩略图等），以及<b>重新编码</b>。
             默认<b>不缩放尺寸</b>，所以清晰度只取决于「压缩程度」这一根滑块。
             <div class="kv">
-              <span>压缩程度</span><span>0–15 几乎无损 ／ 16–35 轻微 ／ 36–60 均衡（推荐）／ 61–80 强力 ／ 81–100 极限</span>
+              <span>压缩程度</span><span>往左 = 质量低文件小，往右 = 质量高文件大；80 左右肉眼几乎无损，压到 60 以下细节才会明显变软</span>
               <span>输出格式</span><span>WEBP 在同等清晰度下通常比 JPG 再小 25–35%；需要交付通用性就选 JPG</span>
               <span>最长边</span><span>填 0 完全不改尺寸；填数字则按比例缩到该边长以内，这是减体积最猛的手段</span>
               <span>看差别</span><span>结果图<b>按住鼠标</b>可切换看原图，松手回到压缩后，方便判断画质</span>
@@ -1038,24 +1039,10 @@ let TAB = 'crop';
 const runProcess = () => { if(TAB === 'comp') compressAll(); else processAll(); };
 
 /* ==================== 板块二：图片压缩 ==================== */
-/* 压缩强度(0–100) → 编码质量：前段很保守，保证"尽量不改变清晰度" */
-const QTAB = [[0,0.97],[25,0.93],[50,0.86],[75,0.74],[88,0.65],[100,0.52]];
+/* 滑块直接就是编码质量 40–100：左 = 低质量/文件小，右 = 高质量/文件大 */
 function qOfLevel(lv){
-  lv = Math.max(0, Math.min(100, parseInt(lv) || 0));
-  for(let i = 0; i < QTAB.length - 1; i++){
-    const a = QTAB[i], b = QTAB[i+1];
-    if(lv <= b[0]) return a[1] + (b[1]-a[1]) * (lv-a[0]) / (b[0]-a[0]);
-  }
-  return QTAB[QTAB.length-1][1];
+  return Math.max(0.4, Math.min(1, (parseInt(lv) || 80) / 100));
 }
-const LVS = [
-  {max:15,  n:'几乎无损', d:'画质看不出差别，主要靠清掉拍摄信息瘦身'},
-  {max:35,  n:'轻微',     d:'与肉眼几乎一致，要求高的交付图用这档'},
-  {max:60,  n:'均衡',     d:'画质基本无损，体积明显下降，最常用'},
-  {max:80,  n:'强力',     d:'放大看细节会变软，适合预览图 / 网页用图'},
-  {max:100, n:'极限',     d:'细节损失明显，只在追求极小文件时使用'}
-];
-function lvInfo(lv){ for(const x of LVS) if(lv <= x.max) return x; return LVS[LVS.length-1]; }
 
 /* 浏览器画布有尺寸上限, 超大图先兜底缩一下, 免得导出空白 */
 function safeScale(w, h){
@@ -1169,6 +1156,7 @@ async function compressAll(){
   const s0 = ok.reduce((s, r) => s + (r.origSize || 0), 0);
   const s1 = ok.reduce((s, r) => s + (r.size || 0), 0);
   compPct = s0 ? (1 - s1/s0) * 100 : 0;
+  $('csize').textContent = ok.length ? fmtSize(s1) + (ok.length > 1 ? ` / ${ok.length} 张` : '') : '—';
 
   if(ok.length){
     $('csum').classList.remove('hidden');
@@ -1412,11 +1400,7 @@ function syncCMaxChips(){
   $('cmaxChips').querySelectorAll('[data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
 }
 function syncCq(){
-  const lv = parseInt($('cq').value) || 0;
-  const info = lvInfo(lv);
-  $('cqn').textContent = info.n;
-  $('cqd').textContent = info.d;
-  $('cqv').textContent = lv;
+  $('cqv').textContent = $('cq').value;
 }
 function bindGroup(wrapId, selId){
   $(wrapId).addEventListener('click', e => {
@@ -1475,6 +1459,8 @@ function loadSettings(){
   };
   REMEMBER.forEach(id => setVal(id, s[id]));
   if(typeof s.showOv === 'boolean') $('showOv').checked = s.showOv;
+  /* 旧版滑块是 0–100 的「压缩程度」，一次性迁到新版「质量」语义：低于 70 的旧值重置为默认 80 */
+  if((parseInt($('cq').value) || 0) < 70) $('cq').value = 80;
   if(s.tab === 'comp') TAB = 'comp';
   if(s.theme === 'light') setTheme('light');   // 只恢复浅色；以前存过深色的这次也回到浅色
   return true;
@@ -1575,6 +1561,7 @@ const cRefresh = () => { clearTimeout(ctimer); ctimer = setTimeout(compressAll, 
 const cChange = () => { saveSettings(); cRefresh(); };
 
 $('cq').addEventListener('input', () => { syncCq(); saveSettings(); cRefresh(); });
+$('creset').onclick = () => { $('cq').value = 80; syncCq(); saveSettings(); cRefresh(); };
 $('cmax').addEventListener('input', () => { syncCMaxChips(); saveSettings(); cRefresh(); });
 $('cfmtSeg').addEventListener('click', e => {
   const b = e.target.closest('[data-v]');
