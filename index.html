@@ -49,19 +49,18 @@ body{
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
 /* ============ 顶栏 ============ */
-.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:22px}
-.top .center{display:flex;align-items:center;gap:14px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:22px}
 .mark{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;flex:none;
   background:linear-gradient(140deg,var(--brand),var(--brand2));
   color:#fff;box-shadow:0 10px 24px -10px rgba(107,140,255,.7)}
 .mark .ic{width:23px;height:23px;stroke-width:1.9}
-.titles{min-width:0}
+.titles{flex:1;min-width:0}
 h1{font-size:21px;margin:0;letter-spacing:2px;font-weight:700;line-height:1.15;
   background:linear-gradient(115deg,var(--brand) 10%,var(--brand2) 90%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;color:transparent}
 .sub{margin:5px 0 0;color:var(--sub);font-size:12px;letter-spacing:2.5px}
-.top .right{justify-self:end;display:flex;align-items:center;gap:9px}
+.top .right{display:flex;align-items:center;gap:9px}
 @media(max-width:640px){.top .sub{display:none}}
 
 .pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;
@@ -251,18 +250,18 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .empty .ic{width:30px;height:30px;opacity:.4}
 
 /* ============ 大板块切换 ============ */
-.tabs{display:flex;width:fit-content;gap:4px;padding:5px;margin:0 auto 18px;
-  background:var(--panel2);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
-.tabs button{height:42px;padding:0 26px;border:1px solid transparent;border-radius:10px;background:transparent;
-  color:var(--sub);font-family:inherit;font-size:13.5px;cursor:pointer;transition:.18s;
-  display:flex;align-items:center;justify-content:center;gap:9px}
-.tabs button .ic{width:17px;height:17px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;margin:0 0 16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}
+.tabs button{height:48px;border:1px solid transparent;border-radius:12px;background:transparent;
+  color:var(--sub);font-family:inherit;font-size:14px;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;justify-content:center;gap:10px;padding:0 10px}
+.tabs button .ic{width:19px;height:19px}
 .tabs button small{font-size:11px;opacity:.7;font-weight:400;letter-spacing:.2px}
-.tabs button:hover{color:var(--text)}
+.tabs button:hover{color:var(--text);background:var(--panel2)}
 .tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:600;
-  box-shadow:0 8px 18px -10px color-mix(in srgb,var(--brand) 88%,transparent)}
+  box-shadow:0 12px 24px -13px color-mix(in srgb,var(--brand) 88%,transparent)}
 .tabs button.on .ic{stroke-width:1.9}
-@media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px;padding:0 16px}}
+@media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px;padding:0 8px}}
 
 /* ============ 压缩强度滑块 ============ */
 .lvrow{display:flex;align-items:center;gap:16px;flex:1;min-width:280px}
@@ -386,12 +385,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 <div class="wrap">
   <!-- ============ 顶栏 ============ -->
   <div class="top">
-    <div></div>
-    <div class="center">
-      <div class="mark"><svg class="ic"><use href="#i-photos"/></svg></div>
-      <div class="titles">
-        <h1>图片工具箱</h1>
-      </div>
+    <div class="mark"><svg class="ic"><use href="#i-photos"/></svg></div>
+    <div class="titles">
+      <h1>图片工具箱</h1>
     </div>
     <div class="right">
       <span class="pill ok"><svg class="ic"><use href="#i-shield"/></svg>本地离线处理</span>
