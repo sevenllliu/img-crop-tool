@@ -264,15 +264,16 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 @media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px;padding:0 8px}}
 
 /* ============ 压缩强度滑块 ============ */
-.lvrow{display:flex;align-items:center;gap:16px;flex:1;min-width:280px}
-.lvrow input[type=range]{flex:1;min-width:150px;width:auto;height:6px}
-.lvbox{min-width:132px;flex:none}
-.lvname{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--text)}
-.lvname .b{font-variant-numeric:tabular-nums;font-size:11px;padding:2px 7px;border-radius:6px;
+.lvrow{display:flex;flex-direction:column;gap:7px;flex:1;min-width:280px}
+.lvrow input[type=range]{width:100%}
+.qtop{display:flex;justify-content:space-between;align-items:center}
+.qfs{font-size:12.5px;color:var(--sub)}
+.qfs b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600}
+.qqv{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text)}
+.qqv .b{font-variant-numeric:tabular-nums;font-size:12px;padding:2px 8px;border-radius:6px;
   background:var(--soft);color:var(--brand);font-weight:600}
-.lvdesc{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.5}
 .lvscale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);
-  margin-top:6px;padding:0 1px;letter-spacing:.2px;flex:1;min-width:280px}
+  letter-spacing:.2px}
 
 /* ============ 压缩结果 ============ */
 .pct{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:1.5px 7px;border-radius:6px;
@@ -622,18 +623,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
           <div class="line">
             <span class="lb">质量</span>
             <div class="lvrow">
-              <input type="range" id="cq" min="40" max="100" value="80">
-              <div class="lvbox">
-                <div class="lvname">质量 <span class="b" id="cqv">80</span></div>
-                <div class="lvdesc">文件大小 <b id="csize">—</b></div>
+              <div class="qtop">
+                <span class="qfs">文件大小 <b id="csize">—</b></span>
+                <span class="qqv">质量 <span class="b" id="cqv">80</span></span>
               </div>
-              <button class="chip-btn" id="creset" data-tip="恢复默认质量 80">重置</button>
-            </div>
-          </div>
-          <div class="line" style="margin-top:-2px">
-            <span class="lb"></span>
-            <div class="lvscale">
-              <span>低质量 / 文件小</span><span>高质量 / 文件大</span>
+              <input type="range" id="cq" min="40" max="100" value="80">
+              <div class="lvscale">
+                <span>低质量 / 文件小</span><span>高质量 / 文件大</span>
+              </div>
             </div>
           </div>
 
@@ -1561,7 +1558,6 @@ const cRefresh = () => { clearTimeout(ctimer); ctimer = setTimeout(compressAll, 
 const cChange = () => { saveSettings(); cRefresh(); };
 
 $('cq').addEventListener('input', () => { syncCq(); saveSettings(); cRefresh(); });
-$('creset').onclick = () => { $('cq').value = 80; syncCq(); saveSettings(); cRefresh(); };
 $('cmax').addEventListener('input', () => { syncCMaxChips(); saveSettings(); cRefresh(); });
 $('cfmtSeg').addEventListener('click', e => {
   const b = e.target.closest('[data-v]');
