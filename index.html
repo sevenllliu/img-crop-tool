@@ -244,18 +244,18 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .empty .ic{width:30px;height:30px;opacity:.4}
 
 /* ============ 大板块切换 ============ */
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;margin:0 0 16px;
-  background:var(--panel);border:1px solid var(--line);border-radius:17px;box-shadow:var(--shadow)}
-.tabs button{height:48px;border:1px solid transparent;border-radius:12px;background:transparent;
-  color:var(--sub);font-family:inherit;font-size:14px;cursor:pointer;transition:.18s;
-  display:flex;align-items:center;justify-content:center;gap:10px;padding:0 10px}
-.tabs button .ic{width:19px;height:19px}
+.tabs{display:flex;width:fit-content;gap:4px;padding:5px;margin:0 auto 18px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.tabs button{height:42px;padding:0 26px;border:1px solid transparent;border-radius:10px;background:transparent;
+  color:var(--sub);font-family:inherit;font-size:13.5px;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;justify-content:center;gap:9px}
+.tabs button .ic{width:17px;height:17px}
 .tabs button small{font-size:11px;opacity:.7;font-weight:400;letter-spacing:.2px}
-.tabs button:hover{color:var(--text);background:var(--panel2)}
+.tabs button:hover{color:var(--text)}
 .tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:600;
-  box-shadow:0 12px 24px -13px color-mix(in srgb,var(--brand) 88%,transparent)}
+  box-shadow:0 8px 18px -10px color-mix(in srgb,var(--brand) 88%,transparent)}
 .tabs button.on .ic{stroke-width:1.9}
-@media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px}}
+@media(max-width:700px){.tabs button small{display:none}.tabs button{font-size:13px;padding:0 16px}}
 
 /* ============ 压缩强度滑块 ============ */
 .lvrow{display:flex;align-items:center;gap:16px;flex:1;min-width:280px}
