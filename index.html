@@ -286,21 +286,23 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
   cursor:zoom-in;user-select:none}
 .cmp img{max-width:100%;max-height:170px;display:block;border-radius:5px;
   filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
-.cmp .before,.cmp .after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px}
-.cmp .before{display:none}
-.cmp.hold .before{display:flex}
-.cmp.hold .after{visibility:hidden}
-.cmp .holdtip{position:absolute;right:9px;top:8px;background:rgba(10,13,18,.74);color:#e9edf5;
-  font-size:10.5px;padding:3px 8px;border-radius:6px;letter-spacing:.3px;display:inline-flex;
-  align-items:center;gap:5px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);
-  transition:.15s;opacity:.9}
-.cmp .holdtip .ic{width:12px;height:12px;opacity:.85}
-.cmp.hold .holdtip{background:var(--brand);border-color:transparent;color:#fff;opacity:1}
+.cmp .after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px}
 .savebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);
   padding:9px 12px;border-radius:11px;background:var(--soft);border:1px solid color-mix(in srgb,var(--brand) 22%,transparent);
   margin-bottom:12px}
 .savebar b{color:var(--brand);font-variant-numeric:tabular-nums;font-weight:600}
 .savebar .ic{color:var(--brand);width:15px;height:15px}
+
+/* ============ 点击放大查看 ============ */
+.viewer{position:fixed;inset:0;z-index:100;background:rgba(8,10,15,.9);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
+  cursor:zoom-out;padding:40px 40px 76px}
+.viewer img{max-width:92vw;max-height:calc(100vh - 120px);border-radius:8px;
+  box-shadow:0 30px 90px rgba(0,0,0,.65);
+  background:conic-gradient(var(--ck1) 0 25%,var(--ck2) 0 50%,var(--ck1) 0 75%,var(--ck2) 0) 0 0/16px 16px}
+.viewer .cap{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#e9edf5;
+  font-size:12.5px;background:rgba(10,13,18,.65);padding:7px 16px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);white-space:nowrap}
 /* 压缩板块左栏：拖放区撑满，避免右栏内容多时左栏留白 */
 #view-comp .panel{display:flex;flex-direction:column}
 #view-comp .dz{flex:1}
@@ -700,6 +702,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     </div>
 
   </div><!-- /view-comp -->
+</div>
+
+<!-- 放大查看（点击结果图打开） -->
+<div class="viewer hidden" id="viewer">
+  <img id="viewerImg" alt="">
+  <div class="cap" id="viewerCap"></div>
 </div>
 
 <script>
@@ -1193,8 +1201,6 @@ function drawComp(){
     <div class="item">
       <div class="cmp" data-c="${i}">
         <div class="after">${after ? `<img src="${after}" alt="">` : '<span style="color:var(--dim);font-size:12px">无预览</span>'}</div>
-        ${r.origThumb ? `<div class="before"><img src="${r.origThumb}" alt=""></div>
-        <span class="holdtip"><svg class="ic"><use href="#i-eye"/></svg>按住看原图</span>` : ''}
         <span class="tag"><svg class="ic"><use href="#i-compress"/></svg>${tagTxt}</span>
       </div>
       <div class="meta">
@@ -1214,16 +1220,29 @@ function drawComp(){
   $('cgrid').querySelectorAll('button[data-i]').forEach(b => {
     b.onclick = () => saveBlob(results[+b.dataset.i].blob, results[+b.dataset.i].outName);
   });
-  /* 按住看原图 */
+  /* 点击放大查看 */
   $('cgrid').querySelectorAll('.cmp').forEach(box => {
-    const on  = e => { e.preventDefault(); box.classList.add('hold'); };
-    const off = () => box.classList.remove('hold');
-    box.addEventListener('pointerdown', on);
-    box.addEventListener('pointerup', off);
-    box.addEventListener('pointerleave', off);
-    box.addEventListener('pointercancel', off);
+    box.addEventListener('click', () => openViewer(+box.dataset.c));
   });
 }
+
+/* ============ 放大查看 ============ */
+let viewerURL = '';
+function openViewer(i){
+  const r = results[i];
+  if(!r || !r.blob) return;
+  if(viewerURL) URL.revokeObjectURL(viewerURL);
+  viewerURL = URL.createObjectURL(r.blob);
+  $('viewerImg').src = viewerURL;
+  $('viewerCap').textContent = `${r.outName} · ${r.w}×${r.h} · ${fmtSize(r.size)}（点击任意处关闭）`;
+  $('viewer').classList.remove('hidden');
+}
+function closeViewer(){
+  $('viewer').classList.add('hidden');
+  if(viewerURL){ URL.revokeObjectURL(viewerURL); viewerURL = ''; }
+}
+$('viewer').addEventListener('click', closeViewer);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeViewer(); });
 
 /* ============ 下载 ============ */
 function saveBlob(blob, name){
