@@ -297,6 +297,7 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .cmp.busy .waitveil{position:absolute;inset:0;border-radius:8px;pointer-events:none;
   background:linear-gradient(100deg,transparent 36%,color-mix(in srgb,var(--brand) 30%,transparent) 50%,transparent 64%);
   background-size:240% 100%;animation:shim 1.35s linear infinite}
+.waitnote{font-size:12px;color:var(--dim)}
 .waitbar{display:block;height:4px;border-radius:999px;background:var(--panel3);overflow:hidden}
 .waitbar i{display:block;height:100%;width:34%;border-radius:999px;
   background:linear-gradient(90deg,var(--brand),var(--brand2));animation:slide 1.15s ease-in-out infinite}
@@ -698,8 +699,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     <div class="toolbar">
       <span class="dot" id="cdot"></span>
       <span class="count" id="cstat">还没有图片</span>
+      <button class="primary" id="cgo" disabled><svg class="ic"><use href="#i-sparkle"/></svg>开始压缩</button>
       <span class="sp"></span>
-      <button class="ghost" id="credo" disabled><svg class="ic"><use href="#i-refresh"/></svg>重新压缩</button>
       <button class="primary" id="cdl" disabled><svg class="ic"><use href="#i-archive"/></svg>打包下载</button>
       <button class="ghost" id="cclear" disabled data-tip="清空全部图片"><svg class="ic"><use href="#i-trash"/></svg></button>
     </div>
@@ -1139,26 +1140,72 @@ function releasePreview(r){ if(r && r.previewURL){ URL.revokeObjectURL(r.preview
 function revokePreviews(){ (results || []).forEach(releasePreview); }
 
 let compPct = 0;
-async function compressAll(){
+/* 是否已按下「开始压缩」：没按之前只列队，不偷偷开工 */
+let compStarted = false;
+
+/* 「开始压缩 / 重新压缩」按钮：没压缩时是主按钮，压完退回次要按钮 */
+function setCgo(mode){
+  const b = $('cgo');
+  if(mode === 'busy'){
+    b.className = 'primary'; b.disabled = true;
+    b.innerHTML = '<svg class="ic"><use href="#i-refresh"/></svg>压缩中…';
+  }else if(mode === 'done'){
+    b.className = 'ghost'; b.disabled = false;
+    b.innerHTML = '<svg class="ic"><use href="#i-refresh"/></svg>重新压缩';
+  }else if(mode === 'off'){
+    b.className = 'ghost'; b.disabled = true;
+    b.innerHTML = '<svg class="ic"><use href="#i-sparkle"/></svg>开始压缩';
+  }else{
+    b.className = 'primary'; b.disabled = false;
+    b.innerHTML = '<svg class="ic"><use href="#i-sparkle"/></svg>开始压缩';
+  }
+}
+
+/* 只铺占位卡片：拖进来就露脸，但不开始压缩 */
+function prepareComp(){
+  revokePreviews();
+  results = files.map(item => ({
+    name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
+    previewURL: URL.createObjectURL(item.file),
+    w: 0, h: 0, w0: 0, h0: 0, fmt: '', q: 1, size: 0,
+    origSize: item.file.size || 0, kept: false, scaled: false,
+    err: false, note: '', state: 'pending'
+  }));
+  drawComp();
+  $('csum').classList.add('hidden');
+  $('cdl').disabled = true;
+  $('csize').textContent = '—';
+  setCgo('go');
+  $('cstat').innerHTML = `待压缩 <b>${files.length}</b> 张 · 点「开始压缩」`;
+  $('cdot').className = 'dot';
+}
+
+async function compressAll(force){
   if(busy) return;
   if(!files.length){
     revokePreviews();
+    compStarted = false;
     results = [];
     $('cgrid').innerHTML = '';
     $('csum').classList.add('hidden');
     $('cempty').classList.remove('hidden');
-    $('cdl').disabled = $('cclear').disabled = $('credo').disabled = true;
+    $('cdl').disabled = $('cclear').disabled = true;
+    setCgo('off');
     $('cstat').textContent = '还没有图片';
     $('cdot').className = 'dot';
     return;
   }
+  /* 还没按下「开始压缩」：只列队，等用户点按钮 */
+  if(!force && !compStarted){ prepareComp(); return; }
+
   busy = true;
+  compStarted = true;
   $('cdot').className = 'dot busy';
-  $('credo').disabled = true;
+  setCgo('busy');
   $('csum').classList.add('hidden');
   const c = ccfg();
 
-  /* 先铺满占位卡片：图片一拖进来就能看到，不用等压缩完 */
+  /* 重新压一遍时也要先把占位铺上，图片不会消失 */
   revokePreviews();
   results = files.map(item => ({
     name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
@@ -1230,7 +1277,8 @@ async function compressAll(){
   }
 
   $('cstat').innerHTML = `共 <b>${results.length}</b> 张` + (bad ? `　<b style="color:var(--warn)">${bad} 张失败</b>` : '　已就绪');
-  $('cdl').disabled = $('cclear').disabled = $('credo').disabled = false;
+  $('cdl').disabled = $('cclear').disabled = false;
+  setCgo('done');
   $('cdot').className = 'dot ' + (bad ? 'busy' : 'ready');
   busy = false;
 }
@@ -1241,22 +1289,24 @@ function drawComp(){
     /* 还没压完的：占位卡，先让图片露脸，再有进度反馈 */
     if(r.state !== 'done'){
       const working = r.state === 'working';
+      const idle = !compStarted;                  /* 还没点「开始压缩」 */
       const pv = r.thumb || r.previewURL || '';   /* 拖进来先露原图，解码完立刻换成原图缩略 */
+      const label = working ? '压缩中' : (idle ? '待压缩' : '排队中');
       return `
     <div class="item">
       <div class="cmp${working ? ' busy' : ''}">
         ${pv ? `<div class="after"><img src="${pv}" alt="">${working ? '<span class="waitveil"></span>' : ''}</div>`
              : '<div class="skel"></div>'}
-        <span class="tag"><svg class="ic"><use href="#i-compress"/></svg>${working ? '压缩中' : '排队中'}</span>
+        <span class="tag"><svg class="ic"><use href="#i-compress"/></svg>${label}</span>
       </div>
       <div class="meta">
         <div class="nm" title="${esc(r.name)}">${esc(r.name)}</div>
         <div class="chips-i">
           <span class="chip-i"><svg class="ic"><use href="#i-file"/></svg>
-            <span>原 <b>${fmtSize(r.origSize)}</b>${working ? ' · 正在压缩…' : ' · 等待处理'}</span></span>
+            <span>原 <b>${fmtSize(r.origSize)}</b>${working ? ' · 正在压缩…' : (idle ? ' · 等待开始' : ' · 等待处理')}</span></span>
         </div>
       </div>
-      <div class="act"><span class="waitbar"><i></i></span></div>
+      <div class="act">${idle ? '<span class="waitnote">未开始</span>' : '<span class="waitbar"><i></i></span>'}</div>
     </div>`;
     }
 
@@ -1415,7 +1465,8 @@ function add(list){
     files.push({file:f, name:f.name});
     n++;
   }
-  if(n){ scheduleSaveFiles(); runProcess(); }
+  /* 新图进来：回到「待压缩」状态，不让它在背后偷偷开工 */
+  if(n){ compStarted = false; scheduleSaveFiles(); runProcess(); }
   else if(list.length){
     if(TAB === 'comp') $('cstat').textContent = '这些不是图片文件';
     else $('stat').textContent = '这些不是图片文件';
@@ -1675,7 +1726,7 @@ $('cmaxChips').addEventListener('click', e => {
   $('cmax').value = b.dataset.v;
   syncCMaxChips(); cChange();
 });
-$('credo').onclick  = () => compressAll();
+$('cgo').onclick    = () => compressAll(true);   /* 只有点这个按钮才真的开始压 */
 $('cclear').onclick = () => clearAll();
 $('chelpBtn').onclick = () => $('chelp').classList.toggle('open');
 
@@ -1692,6 +1743,7 @@ function syncPreset(){
 
 async function clearAll(){
   revokePreviews();
+  compStarted = false;
   files = []; results = [];
   await idbClear();
   /* 两个板块的展示一起清掉，切过去不会看到上一次的残留 */
