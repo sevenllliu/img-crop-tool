@@ -1552,6 +1552,18 @@ $('th').addEventListener('input', () => { syncPreset(); syncPresetChips(); saveS
 $('q').addEventListener('input', () => { $('qv').textContent = $('q').value; });
 $('q').addEventListener('change', onSettingChange);
 
+/* 滑块已滑过部分填充品牌蓝 */
+function paintRange(el){
+  const min = parseFloat(el.min) || 0, max = parseFloat(el.max) || 100;
+  const pct = Math.max(0, Math.min(100, (el.value - min) / (max - min) * 100));
+  el.style.background = `linear-gradient(90deg, var(--brand) ${pct}%, var(--panel3) ${pct}%)`;
+}
+['cq','q'].forEach(id => {
+  const el = $(id);
+  paintRange(el);
+  el.addEventListener('input', () => paintRange(el));
+});
+
 /* ---- 压缩板块联动 ---- */
 let ctimer = null;
 const cRefresh = () => { clearTimeout(ctimer); ctimer = setTimeout(compressAll, 260); };
