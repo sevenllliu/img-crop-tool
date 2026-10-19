@@ -287,6 +287,20 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .cmp img{max-width:100%;max-height:170px;display:block;border-radius:5px;
   filter:drop-shadow(0 6px 14px rgba(0,0,0,.35))}
 .cmp .after{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8px}
+/* 压缩中的占位反馈 */
+.cmp .skel{width:100%;height:100%;border-radius:8px;
+  background:linear-gradient(100deg,var(--panel2) 28%,var(--panel3) 48%,var(--panel2) 68%);
+  background-size:220% 100%;animation:shim 1.25s linear infinite}
+@keyframes shim{0%{background-position:120% 0}100%{background-position:-20% 0}}
+.cmp.busy .after img{opacity:.62}
+/* 正在压缩：在真实预览图上扫一层光，表示「这张在处理」 */
+.cmp.busy .waitveil{position:absolute;inset:0;border-radius:8px;pointer-events:none;
+  background:linear-gradient(100deg,transparent 36%,color-mix(in srgb,var(--brand) 30%,transparent) 50%,transparent 64%);
+  background-size:240% 100%;animation:shim 1.35s linear infinite}
+.waitbar{display:block;height:4px;border-radius:999px;background:var(--panel3);overflow:hidden}
+.waitbar i{display:block;height:100%;width:34%;border-radius:999px;
+  background:linear-gradient(90deg,var(--brand),var(--brand2));animation:slide 1.15s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}
 .savebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);
   padding:9px 12px;border-radius:11px;background:var(--soft);border:1px solid color-mix(in srgb,var(--brand) 22%,transparent);
   margin-bottom:12px}
@@ -1072,8 +1086,9 @@ function ccfg(){
   };
 }
 
-async function compressOne(item, c){
+async function compressOne(item, c, onDecoded){
   const im = await loadImage(item.file);
+  if(onDecoded) onDecoded(im);        // 一解码完就把原图预览顶上去，不等编码
   const w0 = im.naturalWidth, h0 = im.naturalHeight;
 
   let s = safeScale(w0, h0);
@@ -1114,14 +1129,20 @@ async function compressOne(item, c){
     origSize,
     kept: false,
     scaled: (w !== w0 || h !== h0),
-    err: false, note: ''
+    err: false, note: '',
+    state: 'done'
   };
 }
+
+/* 原图预览用的是 objectURL，用完必须回收，否则大图会一直占内存 */
+function releasePreview(r){ if(r && r.previewURL){ URL.revokeObjectURL(r.previewURL); r.previewURL = ''; } }
+function revokePreviews(){ (results || []).forEach(releasePreview); }
 
 let compPct = 0;
 async function compressAll(){
   if(busy) return;
   if(!files.length){
+    revokePreviews();
     results = [];
     $('cgrid').innerHTML = '';
     $('csum').classList.add('hidden');
@@ -1134,25 +1155,60 @@ async function compressAll(){
   busy = true;
   $('cdot').className = 'dot busy';
   $('credo').disabled = true;
-  $('cstat').innerHTML = `压缩中 <b>${files.length}</b> 张`;
+  $('csum').classList.add('hidden');
   const c = ccfg();
-  const out = [];
-  for(const item of files){
-    try{
-      out.push(await compressOne(item, c));
-    }catch(e){
-      out.push({name:item.name, outName:item.name, blob:null, thumb:'', origThumb:'',
-                w:0, h:0, w0:0, h0:0, fmt:'', q:1, size:0,
-                origSize:item.file.size || 0, kept:false, scaled:false,
-                err:true, note:'压缩失败：' + (e.message || '读不了这张图')});
+
+  /* 先铺满占位卡片：图片一拖进来就能看到，不用等压缩完 */
+  revokePreviews();
+  results = files.map(item => ({
+    name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
+    previewURL: URL.createObjectURL(item.file),
+    w: 0, h: 0, w0: 0, h0: 0, fmt: '', q: 1, size: 0,
+    origSize: item.file.size || 0, kept: false, scaled: false,
+    err: false, note: '', state: 'pending'
+  }));
+  drawComp();
+  $('cstat').innerHTML = `排队中 <b>${files.length}</b> 张`;
+
+  /* 刷新节流：每张图内部会推进好几个状态，避免重绘太频繁 */
+  let lastDraw = 0, doneCount = 0;
+  const tick = (force) => {
+    const now = Date.now();
+    if(force || now - lastDraw > 220){
+      lastDraw = now;
+      drawComp();
+      $('cstat').innerHTML = `压缩中 <b>${doneCount}</b> / ${files.length} 张`;
     }
+  };
+  const paint = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
+
+  for(let i = 0; i < files.length; i++){
+    const r = results[i];
+    r.state = 'working';
+    tick(true);
+    await paint();                    // 让浏览器先把「排队中」画出来再开始干重活
+    try{
+      const res = await compressOne(files[i], c, im => {
+        r.thumb = thumbFromImage(im, 320);
+        r.origThumb = r.thumb;
+        tick();
+      });
+      Object.assign(r, res);
+      r.state = 'done';
+    }catch(e){
+      Object.assign(r, {blob:null, thumb:'', origThumb:'', w:0, h:0, w0:0, h0:0, fmt:'', q:1,
+                        size:0, err:true, note:'压缩失败：' + (e.message || '读不了这张图'), state:'done'});
+    }
+    doneCount++;
+    releasePreview(r);          /* 压缩完就用不着原图预览了，及时释放 */
+    tick(true);
   }
-  dedupe(out);
-  results = out;
+
+  dedupe(results);
   drawComp();
 
-  const ok  = out.filter(r => r.blob);
-  const bad = out.filter(r => r.err).length;
+  const ok  = results.filter(r => r.blob);
+  const bad = results.filter(r => r.err).length;
   const s0 = ok.reduce((s, r) => s + (r.origSize || 0), 0);
   const s1 = ok.reduce((s, r) => s + (r.size || 0), 0);
   compPct = s0 ? (1 - s1/s0) * 100 : 0;
@@ -1163,17 +1219,17 @@ async function compressAll(){
     let tip;
     if(compPct > 8){
       tip = `省下 <b>${fmtSize(s0 - s1)}（${compPct.toFixed(0)}%）</b>`;
-    }else if(out.some(r => !r.err && r.fmt === 'png')){
+    }else if(results.some(r => !r.err && r.fmt === 'png')){
       tip = `<span style="color:var(--warn)">几乎没变小 · PNG 本身是无损格式，把输出格式换成 <b>WEBP</b> 或 <b>JPG</b> 才会明显瘦身</span>`;
     }else{
-      tip = `<span style="color:var(--warn)">几乎没变小 · 可以再调高压缩程度，或限制最长边</span>`;
+      tip = `<span style="color:var(--warn)">几乎没变小 · 可以再把质量调低一点</span>`;
     }
     $('csumText').innerHTML = `原共 <b>${fmtSize(s0)}</b> → 压缩后 <b>${fmtSize(s1)}</b>　${tip}`;
   }else{
     $('csum').classList.add('hidden');
   }
 
-  $('cstat').innerHTML = `共 <b>${out.length}</b> 张` + (bad ? `　<b style="color:var(--warn)">${bad} 张失败</b>` : '　已就绪');
+  $('cstat').innerHTML = `共 <b>${results.length}</b> 张` + (bad ? `　<b style="color:var(--warn)">${bad} 张失败</b>` : '　已就绪');
   $('cdl').disabled = $('cclear').disabled = $('credo').disabled = false;
   $('cdot').className = 'dot ' + (bad ? 'busy' : 'ready');
   busy = false;
@@ -1182,6 +1238,28 @@ async function compressAll(){
 function drawComp(){
   $('cempty').classList.toggle('hidden', results.length > 0);
   $('cgrid').innerHTML = results.map((r, i) => {
+    /* 还没压完的：占位卡，先让图片露脸，再有进度反馈 */
+    if(r.state !== 'done'){
+      const working = r.state === 'working';
+      const pv = r.thumb || r.previewURL || '';   /* 拖进来先露原图，解码完立刻换成原图缩略 */
+      return `
+    <div class="item">
+      <div class="cmp${working ? ' busy' : ''}">
+        ${pv ? `<div class="after"><img src="${pv}" alt="">${working ? '<span class="waitveil"></span>' : ''}</div>`
+             : '<div class="skel"></div>'}
+        <span class="tag"><svg class="ic"><use href="#i-compress"/></svg>${working ? '压缩中' : '排队中'}</span>
+      </div>
+      <div class="meta">
+        <div class="nm" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div class="chips-i">
+          <span class="chip-i"><svg class="ic"><use href="#i-file"/></svg>
+            <span>原 <b>${fmtSize(r.origSize)}</b>${working ? ' · 正在压缩…' : ' · 等待处理'}</span></span>
+        </div>
+      </div>
+      <div class="act"><span class="waitbar"><i></i></span></div>
+    </div>`;
+    }
+
     const after = r.thumb || r.origThumb || '';
     const pct = r.origSize ? (1 - r.size / r.origSize) * 100 : 0;
     const cls = r.err ? 'flat' : (pct > 0.5 ? 'down' : (pct < -0.5 ? 'up' : 'flat'));
@@ -1613,6 +1691,7 @@ function syncPreset(){
 }
 
 async function clearAll(){
+  revokePreviews();
   files = []; results = [];
   await idbClear();
   /* 两个板块的展示一起清掉，切过去不会看到上一次的残留 */
