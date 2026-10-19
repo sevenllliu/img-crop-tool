@@ -644,11 +644,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
               <button data-v="jpg">JPG</button>
               <button data-v="png">PNG</button>
             </div>
-            <span class="lb" style="min-width:0"><svg class="ic" style="display:inline;vertical-align:-2px"><use href="#i-frame"/></svg> 最长边</span>
-            <div class="field" style="width:120px">
-              <input type="number" id="cmax" value="0" min="0" aria-label="最长边">
-              <span class="u">px</span>
-            </div>
           </div>
           <div class="chips" id="cmaxChips">
             <button class="chip-btn" data-v="0">原尺寸</button>
@@ -656,7 +651,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
             <button class="chip-btn" data-v="2560">2560</button>
             <button class="chip-btn" data-v="1920">1920</button>
             <button class="chip-btn" data-v="1280">1280</button>
-            <span class="aux" style="font-size:11.5px;color:var(--dim);align-self:center">填 0 = 不改尺寸</span>
           </div>
         </div>
 
@@ -664,6 +658,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
           <option value="auto" selected></option><option value="webp"></option>
           <option value="jpg"></option><option value="png"></option>
         </select>
+        <input type="number" id="cmax" class="hidden" value="0" min="0" aria-label="最长边">
 
         <div class="help" id="chelp">
           <div class="help-in">
