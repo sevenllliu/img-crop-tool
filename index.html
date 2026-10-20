@@ -1055,6 +1055,10 @@ const runProcess = () => { if(TAB === 'comp') compressAll(); else processAll(); 
 
 /* ==================== 板块二：图片压缩 ==================== */
 /* 滑块直接就是编码质量 40–100：左 = 低质量/文件小，右 = 高质量/文件大 */
+/* ============ 压缩板块 ① 参数与单张压缩 ============
+   注意：ccfg() 读的是滑块/格式/最长边三个控件；
+        压缩语义（JPG 垫白底、WEBP 质量 -0.03、最长边缩放）全部集中在 compressOne 里，
+        measureComp 只是它的「缩略采样版」，改压缩规则时这两处要一起改。 */
 function qOfLevel(lv){
   return Math.max(0.4, Math.min(1, (parseInt(lv) || 80) / 100));
 }
@@ -1139,6 +1143,11 @@ async function compressOne(item, c, onDecoded){
 function releasePreview(r){ if(r && r.previewURL){ URL.revokeObjectURL(r.previewURL); r.previewURL = ''; } }
 function revokePreviews(){ (results || []).forEach(releasePreview); }
 
+/* ============ 压缩板块 ② 状态机 ============
+   compStarted=false（待压缩）：拖入/改参数只列队 + 估算体积，卡片不动；
+   点「开始压缩」→ compStarted=true：compressAll 逐张真压，卡片变成结果；
+   已压缩状态下改参数：拖动中只估算，松手(settle)才真压一遍 —— 这是不卡的关键。
+   measureToken 是「世代计数器」：参数一变就 ++，正在跑的旧测量自动作废。 */
 let compPct = 0;
 /* 是否已按下「开始压缩」：没按之前只列队，不偷偷开工 */
 let compStarted = false;
@@ -1161,17 +1170,22 @@ function setCgo(mode){
   }
 }
 
-/* 只铺占位卡片：拖进来就露脸，但不开始压缩 */
-function prepareComp(){
-  measureToken++;              /* 参数变了，正在跑的旧测量作废 */
-  revokePreviews();
-  results = files.map(item => ({
+/* 统一的「还没压缩」结果对象，拖入列队和重新压缩都用它，避免两处各写一份 */
+function makePending(item){
+  return {
     name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
     previewURL: URL.createObjectURL(item.file),
     w: 0, h: 0, w0: 0, h0: 0, fmt: '', q: 1, size: 0,
     origSize: item.file.size || 0, kept: false, scaled: false,
     err: false, note: '', state: 'pending'
-  }));
+  };
+}
+
+/* 只铺占位卡片：拖进来就露脸，但不开始压缩 */
+function prepareComp(){
+  measureToken++;              /* 参数变了，正在跑的旧测量作废 */
+  revokePreviews();
+  results = files.map(makePending);
   drawComp();
   $('csum').classList.add('hidden');
   $('cdl').disabled = true;
@@ -1188,7 +1202,7 @@ const mCache = new Map();                 /* item -> 解码好的图，滑块连
 function mCacheClear(){ mCache.clear(); }
 async function measureComp(){
   const token = ++measureToken;
-  if(!files.length || compStarted) return;
+  if(!files.length || busy) return;      /* busy = 正在真压，别插队抢主线程 */
   const c = ccfg();
   const MEAS = 800;                       /* 采样长边：800px 的小图压一遍只要几毫秒 */
   let total = 0, n = 0;
@@ -1261,13 +1275,7 @@ async function compressAll(force){
 
   /* 重新压一遍时也要先把占位铺上，图片不会消失 */
   revokePreviews();
-  results = files.map(item => ({
-    name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
-    previewURL: URL.createObjectURL(item.file),
-    w: 0, h: 0, w0: 0, h0: 0, fmt: '', q: 1, size: 0,
-    origSize: item.file.size || 0, kept: false, scaled: false,
-    err: false, note: '', state: 'pending'
-  }));
+  results = files.map(makePending);
   drawComp();
   $('cstat').innerHTML = `排队中 <b>${files.length}</b> 张`;
 
@@ -1307,7 +1315,12 @@ async function compressAll(force){
 
   dedupe(results);
   drawComp();
+  finishComp();
+  busy = false;
+}
 
+/* 压缩收尾：汇总条 / 文件大小 / 状态栏 / 按钮状态，全部集中在这里改 */
+function finishComp(){
   const ok  = results.filter(r => r.blob);
   const bad = results.filter(r => r.err).length;
   const s0 = ok.reduce((s, r) => s + (r.origSize || 0), 0);
@@ -1317,15 +1330,7 @@ async function compressAll(force){
 
   if(ok.length){
     $('csum').classList.remove('hidden');
-    let tip;
-    if(compPct > 8){
-      tip = `省下 <b>${fmtSize(s0 - s1)}（${compPct.toFixed(0)}%）</b>`;
-    }else if(results.some(r => !r.err && r.fmt === 'png')){
-      tip = `<span style="color:var(--warn)">几乎没变小 · PNG 本身是无损格式，把输出格式换成 <b>WEBP</b> 或 <b>JPG</b> 才会明显瘦身</span>`;
-    }else{
-      tip = `<span style="color:var(--warn)">几乎没变小 · 可以再把质量调低一点</span>`;
-    }
-    $('csumText').innerHTML = `原共 <b>${fmtSize(s0)}</b> → 压缩后 <b>${fmtSize(s1)}</b>　${tip}`;
+    $('csumText').innerHTML = `原共 <b>${fmtSize(s0)}</b> → 压缩后 <b>${fmtSize(s1)}</b>　${compTip(s0 - s1)}`;
   }else{
     $('csum').classList.add('hidden');
   }
@@ -1334,9 +1339,17 @@ async function compressAll(force){
   $('cdl').disabled = $('cclear').disabled = false;
   setCgo('done');
   $('cdot').className = 'dot ' + (bad ? 'busy' : 'ready');
-  busy = false;
 }
 
+/* 汇总条右侧那句提示：没变小就按格式给出针对性建议 */
+function compTip(saved){
+  if(compPct > 8) return `省下 <b>${fmtSize(saved)}（${compPct.toFixed(0)}%）</b>`;
+  if(results.some(r => !r.err && r.fmt === 'png'))
+    return `<span style="color:var(--warn)">几乎没变小 · PNG 本身是无损格式，把输出格式换成 <b>WEBP</b> 或 <b>JPG</b> 才会明显瘦身</span>`;
+  return `<span style="color:var(--warn)">几乎没变小 · 可以再把质量调低一点</span>`;
+}
+
+/* ============ 压缩板块 ③ 卡片渲染 ============ */
 function drawComp(){
   $('cempty').classList.toggle('hidden', results.length > 0);
   $('cgrid').innerHTML = results.map((r, i) => {
@@ -1761,31 +1774,33 @@ function paintRange(el){
   el.addEventListener('input', () => paintRange(el));
 });
 
-/* ---- 压缩板块联动 ---- */
-let ctimer = null;
+/* ---- 压缩板块联动（两段式，拖动不卡）----
+   第一段 preview：参数一变就跑轻量估算刷「文件大小」，几毫秒出结果；
+   第二段 settle：只有停手之后才按新参数真压一遍刷新卡片（真压很重，绝不能跟着拖动跑）。 */
+let ctimer = null, ctimer2 = null;
 const cRefresh = () => {
-  clearTimeout(ctimer);
-  ctimer = setTimeout(() => {
-    /* 还没开始压：动参数只刷新「文件大小」预估，卡片保持待压缩 */
-    if(!compStarted && files.length){ measureComp(); }
-    else compressAll();
-  }, 260);
+  clearTimeout(ctimer);  clearTimeout(ctimer2);
+  ctimer  = setTimeout(() => { if(files.length) measureComp(); }, 60);
+  if(compStarted) ctimer2 = setTimeout(() => compressAll(), 480);
 };
+/* 松手/点选完立刻收尾，不用等 settle 定时器 */
+const cSettle = () => { clearTimeout(ctimer2); if(compStarted) compressAll(); };
 const cChange = () => { saveSettings(); cRefresh(); };
 
-$('cq').addEventListener('input', () => { syncCq(); saveSettings(); cRefresh(); });
-$('cmax').addEventListener('input', () => { syncCMaxChips(); saveSettings(); cRefresh(); });
+$('cq').addEventListener('input',  () => { syncCq(); cChange(); });
+$('cq').addEventListener('change', cSettle);           // 滑块松手
+$('cmax').addEventListener('input', () => { syncCMaxChips(); cChange(); });
 $('cfmtSeg').addEventListener('click', e => {
   const b = e.target.closest('[data-v]');
   if(!b) return;
   $('cfmt').value = b.dataset.v;
-  syncUI(); cChange();
+  syncUI(); cChange(); cSettle();
 });
 $('cmaxChips').addEventListener('click', e => {
   const b = e.target.closest('[data-v]');
   if(!b) return;
   $('cmax').value = b.dataset.v;
-  syncCMaxChips(); cChange();
+  syncCMaxChips(); cChange(); cSettle();
 });
 $('cgo').onclick    = () => compressAll(true);   /* 只有点这个按钮才真的开始压 */
 $('cclear').onclick = () => clearAll();
