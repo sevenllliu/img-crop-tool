@@ -597,7 +597,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     </label>
     <button class="primary" id="go" disabled><svg class="ic"><use href="#i-sparkle"/></svg>开始裁剪</button>
     <button class="primary" id="dl" disabled><svg class="ic"><use href="#i-archive"/></svg>打包下载</button>
-    <button class="ghost" id="redo" disabled><svg class="ic"><use href="#i-refresh"/></svg>重新处理</button>
+    <button class="ghost" id="redo" disabled data-tip="按当前参数重新处理"><svg class="ic"><use href="#i-refresh"/></svg></button>
     <button class="ghost" id="clear" disabled data-tip="清空本板块的图片"><svg class="ic"><use href="#i-trash"/></svg></button>
   </div>
 
@@ -703,7 +703,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
       <span class="sp"></span>
       <button class="primary" id="cgo" disabled><svg class="ic"><use href="#i-sparkle"/></svg>开始压缩</button>
       <button class="primary" id="cdl" disabled><svg class="ic"><use href="#i-archive"/></svg>打包下载</button>
-      <button class="ghost" id="credo" disabled><svg class="ic"><use href="#i-refresh"/></svg>重新压缩</button>
+      <button class="ghost" id="credo" disabled data-tip="按当前参数重新压缩"><svg class="ic"><use href="#i-refresh"/></svg></button>
       <button class="ghost" id="cclear" disabled data-tip="清空本板块的图片"><svg class="ic"><use href="#i-trash"/></svg></button>
     </div>
 
@@ -1039,6 +1039,7 @@ function prepareCrop(){
   cropResults = cropFiles.map(makePending);
   draw();
   $('dl').disabled = true;
+  $('clear').disabled = false;    /* 有图排队就能清，不用等处理完 */
   setGo('go');
   $('stat').innerHTML = `待处理 <b>${cropFiles.length}</b> 张 · 点「开始裁剪」`;
   setDot('');
@@ -1249,6 +1250,7 @@ function prepareComp(){
   $('csum').classList.add('hidden');
   $('cdl').disabled = true;
   $('csize').textContent = '—';
+  $('cclear').disabled = false;   /* 有图排队就能清，不用等压完 */
   setCgo('go');
   $('cstat').innerHTML = `待压缩 <b>${compFiles.length}</b> 张 · 点「开始压缩」`;
   $('cdot').className = 'dot';
@@ -1891,6 +1893,7 @@ function syncPreset(){
 
 /* 清空当前板块的图片（两个板块互不影响），并重写本机存档 */
 async function clearPanel(){
+  if(busy) return;                /* 正在处理/压缩时不清，避免状态错乱；处理完就能点 */
   const isComp = TAB === 'comp';
   measureToken++;
   if(isComp){
