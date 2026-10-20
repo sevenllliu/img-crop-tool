@@ -382,9 +382,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
     <rect x="1.5" y="2" width="29" height="20" rx="2" stroke-dasharray="3 2.5" opacity=".42"/>
     <rect x="10" y="3.6" width="12" height="16.8" rx="1.2" fill="currentColor" stroke="none" opacity=".9"/>
   </symbol>
-  <symbol id="m-cover" viewBox="0 0 32 24">
-    <rect x="1.5" y="2" width="29" height="20" rx="2" fill="currentColor" stroke="none" opacity=".55"/>
-    <path d="M1.5 7V3.5a1.5 1.5 0 0 1 1.5-1.5h3.5M23.5 2h3.5A1.5 1.5 0 0 1 28.5 3.5V7M30.5 17v3.5a1.5 1.5 0 0 1-1.5 1.5h-3.5M8.5 22H5a1.5 1.5 0 0 1-1.5-1.5V17"/>
+  <symbol id="m-trim" viewBox="0 0 32 24">
+    <rect x="1.5" y="2" width="29" height="20" rx="2" stroke-dasharray="3 3" opacity=".45"/>
+    <rect x="8.5" y="6" width="15" height="12" rx="1.2" fill="currentColor" stroke="none" opacity=".85"/>
   </symbol>
   <symbol id="m-contain" viewBox="0 0 32 24">
     <rect x="1.5" y="2" width="29" height="20" rx="2" opacity=".45"/>
@@ -491,11 +491,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
             <span class="mt">原尺寸裁剪</span>
             <span class="md">不缩放 · 画质不变</span>
           </button>
-          <button class="mode" data-v="cover" data-tip="整图等比缩放到目标大小后切边">
+          <button class="mode" data-v="trim" data-tip="自动切掉四周的透明像素，输出内容的实际大小">
             <svg class="ck ic"><use href="#i-checkcircle"/></svg>
-            <span class="mi"><svg class="ic" style="width:32px;height:24px"><use href="#m-cover"/></svg></span>
-            <span class="mt">缩放后裁剪</span>
-            <span class="md">整图变小 · 铺满</span>
+            <span class="mi"><svg class="ic" style="width:32px;height:24px"><use href="#m-trim"/></svg></span>
+            <span class="mt">裁切透明像素</span>
+            <span class="md">自动去透明边</span>
           </button>
           <button class="mode" data-v="contain" data-tip="整图完整保留，缺的部分补底">
             <svg class="ck ic"><use href="#i-checkcircle"/></svg>
@@ -512,7 +512,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         </div>
       </div>
 
-      <div class="line">
+      <div class="line" id="lineGeom">
         <span class="lb">裁剪焦点</span>
         <div class="pad" id="anchorPad">
           <button data-v="tl" data-tip="左上"><i></i></button>
@@ -554,7 +554,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
     <!-- 隐藏的原生控件，保持与逻辑层一致 -->
     <select id="mode" class="hidden">
-      <option value="crop1x" selected></option><option value="cover"></option>
+      <option value="crop1x" selected></option><option value="trim"></option>
       <option value="contain"></option><option value="stretch"></option>
     </select>
     <select id="anchor" class="hidden">
@@ -783,7 +783,7 @@ function geometry(mode, w, h, tw, th, anchor){
             cropped:(w > tw || h > th), partial:(w < tw || h < th), scale:1};
   }
 
-  const scale = mode === 'cover' ? Math.max(tw/w, th/h) : Math.min(tw/w, th/h);
+  const scale = Math.min(tw/w, th/h);   /* 完整保留：等比缩到能装进目标尺寸 */
   const sw = Math.max(1, Math.round(w*scale));
   const sh = Math.max(1, Math.round(h*scale));
   if(sw >= tw && sh >= th){
@@ -791,6 +791,49 @@ function geometry(mode, w, h, tw, th, anchor){
     return {sw, sh, dx:-Math.round((sw-tw)*a[0]), dy:-Math.round((sh-th)*a[1]), cropped:true, scale};
   }
   return {sw, sh, dx:Math.round((tw-sw)/2), dy:Math.round((th-sh)/2), cropped:false, scale};
+}
+
+/* 裁切透明像素：扫描 alpha 找内容的包围盒，切掉四周透明边（不缩放）。
+   flatten=true 时垫白底（输出 JPG 用，防止半透明边缘压黑）。 */
+function trimTransparent(im, flatten){
+  const w = im.naturalWidth, h = im.naturalHeight;
+  const src = document.createElement('canvas');
+  src.width = w; src.height = h;
+  src.getContext('2d').drawImage(im, 0, 0);
+  let d;
+  try{ d = src.getContext('2d').getImageData(0, 0, w, h).data; }
+  catch(e){ throw new Error('读不了图片像素'); }
+  const A = 8;                            /* alpha 低于它就算透明空白 */
+  const rowHasInk = y => {
+    const row = y * w * 4;
+    for(let x = 0; x < w; x++) if(d[row + x*4 + 3] > A) return true;
+    return false;
+  };
+  let y0 = -1, y1 = -1;
+  for(let y = 0; y < h; y++) if(rowHasInk(y)){ y0 = y; break; }
+  if(y0 < 0) throw new Error('整张图都是透明的');
+  for(let y = h - 1; y >= y0; y--) if(rowHasInk(y)){ y1 = y; break; }
+  let x0 = -1, x1 = -1;
+  for(let x = 0; x < w && x0 < 0; x++)
+    for(let y = y0; y <= y1; y++)
+      if(d[y*w*4 + x*4 + 3] > A){ x0 = x; break; }
+  for(let x = w - 1; x >= 0 && x1 < 0; x--)
+    for(let y = y0; y <= y1; y++)
+      if(d[y*w*4 + x*4 + 3] > A){ x1 = x; break; }
+  const cw = x1 - x0 + 1, chh = y1 - y0 + 1;
+  const cv = document.createElement('canvas');
+  cv.width = cw; cv.height = chh;
+  const ctx = cv.getContext('2d');
+  if(flatten){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, chh); }
+  ctx.drawImage(src, x0, y0, cw, chh, 0, 0, cw, chh);
+  const parts = [];
+  if(x0 || x1 < w - 1) parts.push(`左右裁掉 ${x0} / ${w - 1 - x1} px`);
+  if(y0 || y1 < h - 1) parts.push(`上下裁掉 ${y0} / ${h - 1 - y1} px`);
+  return {
+    canvas: cv, w: cw, h: chh, x0, y0,
+    any: !!(parts.length),
+    note: parts.length ? parts.join('，') : '没有透明边 · 保持原样'
+  };
 }
 
 function drawBlur(ctx, img, tw, th){
@@ -960,8 +1003,11 @@ function cfg(){
 
 function setDot(cls){ $('dot').className = 'dot' + (cls ? ' ' + cls : ''); }
 
-/* 裁剪和压缩一样是手动触发：没点「开始裁剪」前只列队（cropStarted 语义同 compStarted） */
+/* 裁剪和压缩一样是手动触发：没点「开始裁剪」前只列队（cropStarted 语义同 compStarted）。
+   cropGen/compGen 是世代号：处理进行中又拖入新图/清空时 ++，当前这轮跑完发现换代了就回列队态，
+   保证循环遍历的是快照、新图永远以「待处理」进队列而不是被塞进正在跑的这轮。 */
 let cropStarted = false;
+let cropGen = 0, compGen = 0;
 async function processAll(force){
   if(busy) return;
   if(!cropFiles.length){
@@ -978,15 +1024,38 @@ async function processAll(force){
   if(!force && !cropStarted){ prepareCrop(); return; }
   busy = true;
   cropStarted = true;
+  const gen0 = cropGen, list = cropFiles.slice();   /* 快照：中途拖新图不影响这轮 */
   setGo('busy');
   setDot('busy');
   $('redo').disabled = true;
-  $('stat').innerHTML = `处理中 <b>${cropFiles.length}</b> 张`;
+  $('stat').innerHTML = `处理中 <b>${list.length}</b> 张`;
   const c = cfg();
   const out = [];
-  for(const item of cropFiles){
+  for(const item of list){
     try{
       const im = await loadImage(item.file);
+      /* 裁切透明像素：不走目标尺寸，直接按内容包围盒输出 */
+      if(c.mode === 'trim'){
+        const fmt = fmtOf(item.name, c.fmt);
+        const t = trimTransparent(im, fmt === 'jpg');
+        const blob = await toBlob(t.canvas, fmt, c.quality);
+        out.push({
+          name: item.name,
+          outName: outName(item.name, fmt),
+          blob,
+          thumb: thumbOf(t.canvas, 320),
+          overlay: $('showOv').checked
+            ? overlayThumb(im, {tw: t.w, th: t.h}, {dx: -t.x0, dy: -t.y0, scale: 1, cropped: t.any}, 300)
+            : '',
+          cropped: t.any,
+          w: t.w, h: t.h,
+          note: t.note,
+          size: blob.size,
+          state: 'done',
+          trim: true
+        });
+        continue;
+      }
       const fmt = fmtOf(item.name, c.fmt);
       const g0 = geometry(c.mode, im.naturalWidth, im.naturalHeight, c.tw, c.th, c.anchor);
       const {canvas, w, h} = render(im, Object.assign({}, c, {fmt}));
@@ -1010,6 +1079,8 @@ async function processAll(force){
                 note:`<span class="warn">处理失败：${esc(e.message)}</span>`, err:true, state:'done'});
     }
   }
+  /* 这轮跑的时候又有新图进来 / 被清空：本轮结果作废，回到列队态 */
+  if(cropGen !== gen0 || !cropStarted){ busy = false; prepareCrop(); return; }
   dedupe(out);
   cropResults = out;
   draw();
@@ -1045,8 +1116,8 @@ function prepareCrop(){
   setDot('');
 }
 
-const MODE_LABEL = {crop1x:'原尺寸裁剪', cover:'缩放后裁剪', contain:'完整保留', stretch:'拉伸铺满'};
-const MODE_ICON  = {crop1x:'m-1x', cover:'m-cover', contain:'m-contain', stretch:'m-stretch'};
+const MODE_LABEL = {crop1x:'原尺寸裁剪', trim:'裁切透明像素', contain:'完整保留', stretch:'拉伸铺满'};
+const MODE_ICON  = {crop1x:'m-1x', trim:'m-trim', contain:'m-contain', stretch:'m-stretch'};
 
 function chipsFor(r, tw, th, ml){
   const out = [];
@@ -1054,8 +1125,13 @@ function chipsFor(r, tw, th, ml){
     out.push(`<span class="chip-i warn"><svg class="ic"><use href="#i-alert"/></svg><span>${r.note.replace(/<[^>]+>/g,'')}</span></span>`);
     return out.join('');
   }
-  out.push(`<span class="chip-i"><svg class="ic"><use href="#i-frame"/></svg>
+  if(r.trim){
+    out.push(`<span class="chip-i"><svg class="ic"><use href="#i-frame"/></svg>
+      <span class="num">内容 <b>${r.w}×${r.h}</b></span></span>`);
+  }else{
+    out.push(`<span class="chip-i"><svg class="ic"><use href="#i-frame"/></svg>
       <span class="num"><b>${r.w}×${r.h}</b> → <b>${tw}×${th}</b></span></span>`);
+  }
   const isWarn = /class="warn"/.test(r.note || '');
   const plain = (r.note || '').replace(/<[^>]+>/g, '');
   plain.split('，').filter(Boolean).forEach(t => {
@@ -1095,7 +1171,7 @@ function draw(){
     <div class="item">
       ${r.overlay ? `<div class="ovbox"><img src="${r.overlay}" alt=""><span class="tag"><svg class="ic"><use href="#i-eye"/></svg>原图 · 变暗处将被裁掉</span></div>` : ''}
       <div class="thumb">${r.thumb ? `<img src="${r.thumb}" alt="">` : '<span style="color:var(--dim);font-size:12px">无预览</span>'}
-        <span class="tag"><svg class="ic"><use href="#${mi}"/></svg>${ml} ${tw}×${th}</span></div>
+        <span class="tag"><svg class="ic"><use href="#${mi}"/></svg>${r.trim ? ml : `${ml} ${tw}×${th}`}</span></div>
       <div class="meta">
         <div class="nm" title="${esc(r.outName)}">${esc(r.outName)}</div>
         <div class="chips-i">${chipsFor(r, tw, th, ml)}</div>
@@ -1329,6 +1405,7 @@ async function compressAll(force){
 
   busy = true;
   compStarted = true;
+  const gen0 = compGen, list = compFiles.slice();   /* 快照：中途拖新图不影响这轮 */
   $('cdot').className = 'dot busy';
   setCgo('busy');
   $('csum').classList.add('hidden');
@@ -1336,9 +1413,9 @@ async function compressAll(force){
 
   /* 重新压一遍时也要先把占位铺上，图片不会消失 */
   revokeList(results);
-  results = compFiles.map(makePending);
+  results = list.map(makePending);
   drawComp();
-  $('cstat').innerHTML = `排队中 <b>${compFiles.length}</b> 张`;
+  $('cstat').innerHTML = `排队中 <b>${list.length}</b> 张`;
 
   /* 刷新节流：每张图内部会推进好几个状态，避免重绘太频繁 */
   let lastDraw = 0, doneCount = 0;
@@ -1347,18 +1424,18 @@ async function compressAll(force){
     if(force || now - lastDraw > 220){
       lastDraw = now;
       drawComp();
-      $('cstat').innerHTML = `压缩中 <b>${doneCount}</b> / ${compFiles.length} 张`;
+      $('cstat').innerHTML = `压缩中 <b>${doneCount}</b> / ${list.length} 张`;
     }
   };
   const paint = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
 
-  for(let i = 0; i < compFiles.length; i++){
+  for(let i = 0; i < list.length; i++){
     const r = results[i];
     r.state = 'working';
     tick(true);
     await paint();                    // 让浏览器先把「排队中」画出来再开始干重活
     try{
-      const res = await compressOne(compFiles[i], c, im => {
+      const res = await compressOne(list[i], c, im => {
         r.thumb = thumbFromImage(im, 320);
         r.origThumb = r.thumb;
         tick();
@@ -1374,6 +1451,8 @@ async function compressAll(force){
     tick(true);
   }
 
+  /* 这轮跑的时候又有新图进来 / 被清空：本轮结果作废，回到列队态 */
+  if(compGen !== gen0 || !compStarted){ busy = false; prepareComp(); return; }
   dedupe(results);
   drawComp();
   finishComp();
@@ -1598,8 +1677,8 @@ function add(list){
   }
   /* 新图进来：本板块回到「待处理/待压缩」状态，不让它在背后偷偷开工 */
   if(n){
-    if(isComp){ compStarted = false; mCacheClear(); }
-    else cropStarted = false;
+    if(isComp){ compStarted = false; compGen++; mCacheClear(); }
+    else { cropStarted = false; cropGen++; }
     scheduleSaveFiles();
     runProcess();
   }
@@ -1666,6 +1745,9 @@ function syncUI(){
   syncCMaxChips();
   $('bgColorGrp').classList.toggle('dim-off', $('bg').value !== 'custom');
   $('bgColorGrp').querySelector('.sw').style.background = $('bgColor').value;
+  /* 裁切透明像素用不到焦点和填充，藏起来免得误导 */
+  const isTrim = $('mode').value === 'trim';
+  document.getElementById('lineGeom').classList.toggle('hidden', isTrim);
 }
 function syncPresetChips(){
   const cur = `${$('tw').value}x${$('th').value}`;
@@ -1896,6 +1978,7 @@ async function clearPanel(){
   if(busy) return;                /* 正在处理/压缩时不清，避免状态错乱；处理完就能点 */
   const isComp = TAB === 'comp';
   measureToken++;
+  cropGen++; compGen++;           /* 跑到一半的轮次全部作废 */
   if(isComp){
     revokeList(results);
     mCacheClear();
