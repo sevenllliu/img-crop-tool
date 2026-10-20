@@ -1181,20 +1181,50 @@ function prepareComp(){
   $('cdot').className = 'dot';
 }
 
-/* 还没点「开始压缩」时动滑块：后台用当前参数真压一遍算体积，把「文件大小」填上。
-   卡片保持「待压缩」不动，只有点了开始才把结果落到卡片上。 */
+/* 还没点「开始压缩」时动滑块：不真压原图，用「缩略采样 + 像素比例」快速估算体积（看图王式丝滑）。
+   卡片保持「待压缩」不动，只有点了开始才把真实结果落到卡片上。 */
 let measureToken = 0;
+const mCache = new Map();                 /* item -> 解码好的图，滑块连拖时不用反复解码 */
+function mCacheClear(){ mCache.clear(); }
 async function measureComp(){
   const token = ++measureToken;
   if(!files.length || compStarted) return;
   const c = ccfg();
+  const MEAS = 800;                       /* 采样长边：800px 的小图压一遍只要几毫秒 */
   let total = 0, n = 0;
   for(const item of files){
     try{
-      const r = await compressOne(item, c);
-      if(token !== measureToken) return;     /* 期间参数又变了 / 开始压缩了 → 这轮作废 */
-      total += r.size; n++;
-      $('csize').textContent = fmtSize(total) + (n > 1 ? ` / ${n} 张` : '');
+      let ent = mCache.get(item);
+      if(!ent){
+        const im = await loadImage(item.file);
+        if(token !== measureToken) return;
+        ent = { im, w: im.naturalWidth, h: im.naturalHeight };
+        if(mCache.size > 12) mCache.clear();          /* 最多缓存 12 张，防大图占内存 */
+        mCache.set(item, ent);
+      }
+      /* 输出像素：和 compressOne 同一套缩放逻辑（最长边档位） */
+      let ow = ent.w, oh = ent.h;
+      if(c.max > 0 && Math.max(ow, oh) > c.max){
+        const k = c.max / Math.max(ow, oh);
+        ow = Math.max(1, Math.round(ow * k)); oh = Math.max(1, Math.round(oh * k));
+      }
+      /* 采样图：把输出尺寸等比缩到长边 MEAS 以内 */
+      const s = Math.min(1, MEAS / Math.max(ow, oh));
+      const sw = Math.max(1, Math.round(ow * s)), sh = Math.max(1, Math.round(oh * s));
+      const cv = document.createElement('canvas');
+      cv.width = sw; cv.height = sh;
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      const fmt = fmtOf(item.name, c.fmt);
+      if(fmt === 'jpg'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, sw, sh); }  /* 转 JPG 垫白底 */
+      ctx.drawImage(ent.im, 0, 0, sw, sh);
+      let q = qOfLevel(c.level);
+      if(fmt === 'webp') q = Math.max(0.4, q - 0.03);
+      const blob = await toBlob(cv, fmt, fmt === 'png' ? undefined : q);
+      if(token !== measureToken) return;
+      total += blob.size * (ow * oh) / (sw * sh);   /* 按像素比例放大成整图估算 */
+      n++;
+      $('csize').textContent = '≈ ' + fmtSize(total) + (n > 1 ? ` / ${n} 张` : '');
     }catch(e){}
     if(token !== measureToken) return;
     await new Promise(r => setTimeout(r, 0));   /* 让一下主线程，别卡拖动 */
@@ -1220,6 +1250,7 @@ async function compressAll(force){
   if(!force && !compStarted){ prepareComp(); return; }
 
   measureToken++;      /* 真的开工了，后台的体积测量作废 */
+  mCacheClear();       /* 解码缓存用不上了，及时释放 */
 
   busy = true;
   compStarted = true;
@@ -1773,6 +1804,8 @@ function syncPreset(){
 
 async function clearAll(){
   revokePreviews();
+  measureToken++;
+  mCacheClear();
   compStarted = false;
   files = []; results = [];
   await idbClear();
