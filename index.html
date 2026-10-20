@@ -1163,6 +1163,7 @@ function setCgo(mode){
 
 /* 只铺占位卡片：拖进来就露脸，但不开始压缩 */
 function prepareComp(){
+  measureToken++;              /* 参数变了，正在跑的旧测量作废 */
   revokePreviews();
   results = files.map(item => ({
     name: item.name, outName: item.name, blob: null, thumb: '', origThumb: '',
@@ -1178,6 +1179,26 @@ function prepareComp(){
   setCgo('go');
   $('cstat').innerHTML = `待压缩 <b>${files.length}</b> 张 · 点「开始压缩」`;
   $('cdot').className = 'dot';
+}
+
+/* 还没点「开始压缩」时动滑块：后台用当前参数真压一遍算体积，把「文件大小」填上。
+   卡片保持「待压缩」不动，只有点了开始才把结果落到卡片上。 */
+let measureToken = 0;
+async function measureComp(){
+  const token = ++measureToken;
+  if(!files.length || compStarted) return;
+  const c = ccfg();
+  let total = 0, n = 0;
+  for(const item of files){
+    try{
+      const r = await compressOne(item, c);
+      if(token !== measureToken) return;     /* 期间参数又变了 / 开始压缩了 → 这轮作废 */
+      total += r.size; n++;
+      $('csize').textContent = fmtSize(total) + (n > 1 ? ` / ${n} 张` : '');
+    }catch(e){}
+    if(token !== measureToken) return;
+    await new Promise(r => setTimeout(r, 0));   /* 让一下主线程，别卡拖动 */
+  }
 }
 
 async function compressAll(force){
@@ -1197,6 +1218,8 @@ async function compressAll(force){
   }
   /* 还没按下「开始压缩」：只列队，等用户点按钮 */
   if(!force && !compStarted){ prepareComp(); return; }
+
+  measureToken++;      /* 真的开工了，后台的体积测量作废 */
 
   busy = true;
   compStarted = true;
@@ -1709,7 +1732,14 @@ function paintRange(el){
 
 /* ---- 压缩板块联动 ---- */
 let ctimer = null;
-const cRefresh = () => { clearTimeout(ctimer); ctimer = setTimeout(compressAll, 260); };
+const cRefresh = () => {
+  clearTimeout(ctimer);
+  ctimer = setTimeout(() => {
+    /* 还没开始压：动参数只刷新「文件大小」预估，卡片保持待压缩 */
+    if(!compStarted && files.length){ measureComp(); }
+    else compressAll();
+  }, 260);
+};
 const cChange = () => { saveSettings(); cRefresh(); };
 
 $('cq').addEventListener('input', () => { syncCq(); saveSettings(); cRefresh(); });
@@ -1784,12 +1814,19 @@ $('helpBtn').onclick = () => $('help').classList.toggle('open');
   if(!SHARE){ try{ rec = await idbLoad(); }catch(e){ rec = []; } }
 
   if(rec.length){
-    files = rec.map(r => (r.blob instanceof File)
-      ? r.blob
-      : new File([r.blob], r.name || 'image.png', {type:(r.blob && r.blob.type) || 'image/png'}));
+    /* 关键：files 的统一形状是 {file, name}，恢复时必须包一层，直接塞 File 会让后面 item.file 全部取空报错 */
+    files = rec.map(r => {
+      const f = (r.blob instanceof File)
+        ? r.blob
+        : new File([r.blob], r.name || 'image.png', {type:(r.blob && r.blob.type) || 'image/png'});
+      return {file: f, name: f.name};
+    });
     const el = TAB === 'comp' ? $('cstat') : $('stat');
     el.innerHTML = `正在恢复 <b>${files.length}</b> 张图…`;
-    runProcess();
+    try{
+      const p = runProcess();
+      if(p && p.catch) p.catch(() => { el.textContent = '恢复失败，请重新拖入图片'; });
+    }catch(e){ el.textContent = '恢复失败，请重新拖入图片'; }
   }else if(restored){
     const el = TAB === 'comp' ? $('cstat') : $('stat');
     el.textContent = '已恢复上次的参数设置';
