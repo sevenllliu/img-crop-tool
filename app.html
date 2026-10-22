@@ -168,12 +168,6 @@ h1{font-size:21px;margin:0;letter-spacing:2px;font-weight:700;line-height:1.15;
 @keyframes dStr{0%,100%{transform:scaleX(.6)}50%{transform:scaleX(1)}}
 @keyframes dArL{0%,100%{transform:translateX(2.4px);opacity:.3}50%{transform:translateX(-1.2px);opacity:.9}}
 @keyframes dArR{0%,100%{transform:translateX(-2.4px);opacity:.3}50%{transform:translateX(1.2px);opacity:.9}}
-@media (prefers-reduced-motion:reduce){
-  .mode:hover .mst,.mode:focus-visible .mst{opacity:1}
-  .mode:hover .mdemo,.mode:focus-visible .mdemo{opacity:0}
-  .pdemo,.fdemo{display:none}
-  .mdemo [class^="d-"]{animation:none !important}
-}
 
 /* ============ 九宫格焦点 ============ */
 .pad{display:grid;grid-template-columns:repeat(3,26px);grid-template-rows:repeat(3,26px);gap:3px;
