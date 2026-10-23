@@ -1850,6 +1850,8 @@ function syncUI(){
   /* 裁切透明像素用不到焦点和填充，藏起来免得误导 */
   const isTrim = $('mode').value === 'trim';
   document.getElementById('lineGeom').classList.toggle('hidden', isTrim);
+  /* 滑块值可能被「恢复上次设置」等 JS 改过，填充必须跟着重画，否则开场就对不齐 */
+  paintRange($('cq')); paintRange($('q'));
 }
 function syncPresetChips(){
   const cur = `${$('tw').value}x${$('th').value}`;
