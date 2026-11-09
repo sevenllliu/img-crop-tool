@@ -679,7 +679,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         <div class="kv">
           <span>裁剪焦点</span><span>决定多余部分从哪边切掉，点九宫格切换</span>
           <span>留白填充</span><span>只有「完整保留」或小图补底时才会用到</span>
-          <span>自动保存</span><span>参数与图片都存在本机，下次打开自动恢复（总量超 500MB 后不再保存图片）</span>
+          <span>刷新页面</span><span>图片不会保存，刷新后自动清空；只记住质量、尺寸、格式等参数设置</span>
         </div>
       </div>
     </div>
@@ -1780,7 +1780,6 @@ function add(list){
   if(n){
     if(isComp){ compStarted = false; compGen++; mCacheClear(); }
     else { cropStarted = false; cropGen++; }
-    scheduleSaveFiles();
     runProcess();
   }
   else if(list.length){
@@ -1960,70 +1959,11 @@ $('themeBtn').onclick = () => {
   saveSettings();
 };
 
-/* ============ 图片记忆（存本机 IndexedDB, 不上传） ============ */
-const DB_NAME = 'imgCropFilesDB', STORE = 'files';
-const MAX_TOTAL = 500 * 1024 * 1024;   // 超过 500MB 就不存了, 免得撑爆浏览器
-let fileStoreOk = true;
-
-function openDB(){
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      if(!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE);
-    };
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error || new Error('IndexedDB 打不开'));
-  });
-}
-async function idbSave(crop, comp){
-  const db = await openDB();
-  const tx = db.transaction(STORE, 'readwrite');
-  const st = tx.objectStore(STORE);
-  st.clear();
-  let i = 0;
-  const put = (list, tag) => list.forEach(f => { st.put({k:i, list:tag, name:f.name, blob:f.file}, i); i++; });
-  put(crop, 'crop');
-  put(comp, 'comp');
-  return new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
-}
-async function idbLoad(){
-  const db = await openDB();
-  return new Promise(res => {
-    const out = [];
-    const req = db.transaction(STORE, 'readonly').objectStore(STORE).openCursor();
-    req.onsuccess = e => {
-      const c = e.target.result;
-      if(c){ out.push(c.value); c.continue(); }
-      else res(out.sort((a, b) => (a.k || 0) - (b.k || 0)));
-    };
-    req.onerror = () => res([]);
-  });
-}
-async function idbClear(){
-  try{
-    const db = await openDB();
-    const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).clear();
-    return new Promise(r => tx.oncomplete = r);
-  }catch(e){}
-}
-
-let fsTimer = null;
-async function saveFiles(){
-  if(!fileStoreOk || SHARE) return; // 无痕模式不写本机
-  const all = cropFiles.concat(compFiles);
-  const total = all.reduce((s, f) => s + (f.file.size || 0), 0);
-  if(total > MAX_TOTAL){
-    fileStoreOk = false;
-    $('stat').textContent = '图片总量超过 500MB，已停止自动保存';
-    return;
-  }
-  try{ await idbSave(cropFiles, compFiles); }
-  catch(e){ fileStoreOk = false; }
-}
-function scheduleSaveFiles(){
-  clearTimeout(fsTimer);
-  fsTimer = setTimeout(saveFiles, 600);
+/* ============ 图片不落盘：刷新页面即清空（改回原来的行为） ============
+   只保留「参数设置」的记忆（localStorage），图片一律不保存、不恢复。
+   顺手删掉旧版本留在本机的图片存档，避免白白占着浏览器空间。 */
+function dropFileStore(){
+  try{ indexedDB.deleteDatabase('imgCropFilesDB'); }catch(e){}
 }
 
 /* ============ 设置联动 ============ */
@@ -2102,7 +2042,7 @@ function syncPreset(){
   $('preset').value = opts.includes(cur) ? cur : '';
 }
 
-/* 清空当前板块的图片（两个板块互不影响），并重写本机存档 */
+/* 清空当前板块的图片（两个板块互不影响） */
 async function clearPanel(){
   if(busy) return;                /* 正在处理/压缩时不清，避免状态错乱；处理完就能点 */
   const isComp = TAB === 'comp';
@@ -2118,7 +2058,6 @@ async function clearPanel(){
     cropStarted = false;
     cropFiles = []; cropResults = [];
   }
-  try{ await idbSave(cropFiles, compFiles); }catch(e){}
   if(isComp){
     $('cgrid').innerHTML = '';
     $('cempty').classList.remove('hidden');
@@ -2150,39 +2089,15 @@ $('tab-comp').onclick = () => setTab('comp');
 /* 说明折叠 */
 $('helpBtn').onclick = () => $('help').classList.toggle('open');
 
-/* 打开页面时: 先恢复参数, 再恢复上次处理过的图片 */
-(async function init(){
+/* 打开页面时: 只恢复参数设置；图片一律不恢复，刷新即回到干净的空状态 */
+(function init(){
   setTheme('light');
-  const restored = SHARE ? false : loadSettings();   // 无痕模式不读本机
+  if(!SHARE) loadSettings();   // 只恢复参数（无痕模式不读本机）
   $('qv').textContent = $('q').value;
   syncCq();
   syncUI();
   setTab(TAB);
-
-  let rec = [];
-  if(!SHARE){ try{ rec = await idbLoad(); }catch(e){ rec = []; } }
-
-  if(rec.length){
-    /* 关键：{file, name} 统一形状必须包一层；按 list 字段分回各自板块（旧存档没有 list 一律归裁剪） */
-    const wrap = r => {
-      const f = (r.blob instanceof File)
-        ? r.blob
-        : new File([r.blob], r.name || 'image.png', {type:(r.blob && r.blob.type) || 'image/png'});
-      return {file: f, name: f.name};
-    };
-    cropFiles = rec.filter(r => (r.list || 'crop') !== 'comp').map(wrap);
-    compFiles = rec.filter(r => r.list === 'comp').map(wrap);
-    const total = cropFiles.length + compFiles.length;
-    const el = TAB === 'comp' ? $('cstat') : $('stat');
-    el.innerHTML = `正在恢复 <b>${total}</b> 张图…`;
-    try{
-      const p = runProcess();
-      if(p && p.catch) p.catch(() => { el.textContent = '恢复失败，请重新拖入图片'; });
-    }catch(e){ el.textContent = '恢复失败，请重新拖入图片'; }
-  }else if(restored){
-    const el = TAB === 'comp' ? $('cstat') : $('stat');
-    el.textContent = '已恢复上次的参数设置';
-  }
+  dropFileStore();   // 清掉旧版本留在本机的图片存档，之后不再写入
 })();
 </script>
 </body>
