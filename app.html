@@ -1747,7 +1747,8 @@ async function buildZip(items){
 }
 
 $('dl').onclick = async () => {
-  const ok = results.filter(r => r.blob);
+  /* 裁剪板块的结果在 cropResults；results 是压缩板块的，别混用 */
+  const ok = cropResults.filter(r => r.blob);
   if(!ok.length) return;
   $('stat').textContent = '正在打包…';
   const zip = await buildZip(ok);
