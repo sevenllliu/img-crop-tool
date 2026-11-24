@@ -1442,7 +1442,7 @@ async function measureComp(){
   const token = ++measureToken;
   if(!compFiles.length || busy) return;      /* busy = 正在真压，别插队抢主线程 */
   const c = ccfg();
-  const MEAS = 800;                       /* 采样长边：800px 的小图压一遍只要几毫秒 */
+  const MEAS = 1200;     /* 采样长边：1200px 仍只要十几毫秒，但比 800px 准得多 */
   let total = 0, n = 0;
   for(const item of compFiles){
     try{
@@ -1454,12 +1454,11 @@ async function measureComp(){
         if(mCache.size > 12) mCache.clear();          /* 最多缓存 12 张，防大图占内存 */
         mCache.set(item, ent);
       }
-      /* 输出像素：和 compressOne 同一套缩放逻辑（最长边档位） */
+      /* 输出像素：和 compressOne 同一套缩放逻辑（最长边档位 + safeScale） */
       let ow = ent.w, oh = ent.h;
-      if(c.max > 0 && Math.max(ow, oh) > c.max){
-        const k = c.max / Math.max(ow, oh);
-        ow = Math.max(1, Math.round(ow * k)); oh = Math.max(1, Math.round(oh * k));
-      }
+      let sc = safeScale(ow, oh);
+      if(c.max > 0 && Math.max(ow, oh) > c.max) sc = Math.min(sc, c.max / Math.max(ow, oh));
+      if(sc < 1){ ow = Math.max(1, Math.round(ow*sc)); oh = Math.max(1, Math.round(oh*sc)); }
       /* 采样图：把输出尺寸等比缩到长边 MEAS 以内 */
       const s = Math.min(1, MEAS / Math.max(ow, oh));
       const sw = Math.max(1, Math.round(ow * s)), sh = Math.max(1, Math.round(oh * s));
@@ -1468,13 +1467,28 @@ async function measureComp(){
       const ctx = cv.getContext('2d');
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
       const fmt = fmtOf(item.name, c.fmt);
-      if(fmt === 'jpg'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, sw, sh); }  /* 转 JPG 垫白底 */
+      const srcExt = (item.name.split('.').pop() || '').toLowerCase();
+      /* JPG 垫白底：和 compressOne 一致——仅「源是 png/webp 且有透明」才垫，别无条件垫 */
       ctx.drawImage(ent.im, 0, 0, sw, sh);
+      if(fmt === 'jpg' && (srcExt === 'png' || srcExt === 'webp') && canvasHasAlpha(cv)){
+        ctx.fillStyle = '#ffffff';
+        ctx.globalCompositeOperation = 'destination-over';  /* 只填透明处，不覆盖图像 */
+        ctx.fillRect(0, 0, sw, sh);
+        ctx.globalCompositeOperation = 'source-over';
+      }
       let q = qOfLevel(c.level);
       if(fmt === 'webp') q = Math.max(0.4, q - 0.03);
       const blob = await toBlob(cv, fmt, fmt === 'png' ? undefined : q);
       if(token !== measureToken) return;
-      total += blob.size * (ow * oh) / (sw * sh);   /* 按像素比例放大成整图估算 */
+      /* 体积随分辨率非线性增长：有损格式小图压缩率偏高，线性外推会系统性低估，
+         而且质量越低低估越厉害。实测 像素比^alpha 修正最准，alpha 随质量变化：
+           PNG 恒 1.06；JPG 约 1.85-0.0072×q；WEBP 约 1.50-0.003×q。 */
+      const ratioPx = (ow * oh) / (sw * sh);
+      const lv = c.level;
+      const alpha = fmt === 'png' ? 1.06
+        : fmt === 'webp' ? Math.max(1.18, 1.50 - 0.003 * lv)
+        : Math.max(1.12, 1.85 - 0.0072 * lv);
+      total += blob.size * Math.pow(ratioPx, alpha);
       n++;
       $('csize').textContent = '≈ ' + fmtSize(total) + (n > 1 ? ` / ${n} 张` : '');
     }catch(e){}
