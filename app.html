@@ -399,9 +399,9 @@ button.ghost:disabled{opacity:.42;cursor:not-allowed}
 .viewer .cap{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);color:#e9edf5;
   font-size:12.5px;background:rgba(10,13,18,.65);padding:7px 16px;border-radius:999px;
   border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);white-space:nowrap}
-/* 压缩板块左栏：拖放区撑满，避免右栏内容多时左栏留白 */
-#view-comp .panel{display:flex;flex-direction:column}
-#view-comp .dz{flex:1}
+/* 三个板块左栏都是拖放区：撑满，避免右栏内容多时左栏留白 */
+.two .panel{display:flex;flex-direction:column}
+.two .dz{flex:1}
 .hidden{display:none !important}
 
 /* ============ 说明折叠 ============ */
@@ -505,8 +505,24 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   <!-- ==================== 板块一：图片裁剪 ==================== -->
   <div class="view" id="view-crop">
 
-  <!-- ============ 尺寸 + 拖入 ============ -->
+  <!-- ============ 拖入 + 尺寸：拖入区统一放左边，跟另两个板块一致 ============ -->
   <div class="two">
+    <div class="panel">
+      <div class="phead">
+        <svg class="ic"><use href="#i-upload"/></svg>
+        <h2>加入图片</h2>
+        <span class="sp"></span>
+        <span class="aux">支持整个文件夹拖入</span>
+      </div>
+      <div id="drop" class="dz">
+        <span class="dz-ic"><svg class="ic"><use href="#i-upload"/></svg></span>
+        <span class="t1">拖入图片或文件夹</span>
+        <span class="t2">或点击选择 · 支持 JPG / PNG / WEBP</span>
+      </div>
+      <input type="file" id="file" multiple accept="image/*" class="hidden">
+      <input type="file" id="folder" multiple webkitdirectory class="hidden">
+    </div>
+
     <div class="panel">
       <div class="phead">
         <svg class="ic"><use href="#i-frame"/></svg>
@@ -536,22 +552,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         <option value="1080x1920"></option><option value="2480x3508"></option>
         <option value="750x1334"></option>
       </select>
-    </div>
-
-    <div class="panel">
-      <div class="phead">
-        <svg class="ic"><use href="#i-upload"/></svg>
-        <h2>加入图片</h2>
-        <span class="sp"></span>
-        <span class="aux">支持整个文件夹拖入</span>
-      </div>
-      <div id="drop" class="dz">
-        <span class="dz-ic"><svg class="ic"><use href="#i-upload"/></svg></span>
-        <span class="t1">拖入图片或文件夹</span>
-        <span class="t2">或点击选择 · 支持 JPG / PNG / WEBP</span>
-      </div>
-      <input type="file" id="file" multiple accept="image/*" class="hidden">
-      <input type="file" id="folder" multiple webkitdirectory class="hidden">
     </div>
   </div>
 
