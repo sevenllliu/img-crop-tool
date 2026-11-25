@@ -204,24 +204,27 @@ h1{font-size:21px;margin:0;letter-spacing:2px;font-weight:700;line-height:1.15;
   filter:blur(1.4px)}
 .sw.alpha{background:conic-gradient(#b9c0cc 0 25%,#fff 0 50%,#b9c0cc 0 75%,#fff 0) 0 0/10px 10px}
 .sw.custom{background:linear-gradient(135deg,#6b8cff,#9b7bf5)}
-/* 第三板块「透明填色」的色块：复用 .sw 的尺寸，另给三个独立类名避免和裁剪板块串样式 */
+/* 第三板块「图案填色」的色块：复用 .sw 的尺寸，另给三个独立类名避免和裁剪板块串样式 */
 .sw.fwhite{background:#fff}
 .sw.fblack{background:#111}
 .sw.fcustom{background:linear-gradient(135deg,#6b8cff,#9b7bf5)}
 .fill input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;
   border:0;padding:0;background:transparent}
 
-/* 透明填色：悬停演示「透明棋盘被纯色铺满」。演示层绝对定位覆盖，布局尺寸零变动。
-   --cv 来自预设色的内联样式，或 syncFillColor() 给自定义按钮设的值；任何系统动画设置下都演示。 */
+/* 图案填色：悬停演示「灰色图案被染成选中色」，透明棋盘底始终保留。
+   演示层绝对定位覆盖，布局尺寸零变动；--cv 来自预设色内联样式或 syncFillColor()；
+   任何系统动画设置下都演示。 */
 .fminidemo{position:absolute;inset:0;border-radius:9px;opacity:0;transition:opacity .16s;
   overflow:hidden;pointer-events:none}
 .fill:hover .fminidemo,.fill:focus-visible .fminidemo{opacity:1}
 .fminidemo::before{content:"";position:absolute;inset:0;
   background:conic-gradient(#c3cad6 0 25%,#fff 0 50%,#c3cad6 0 75%,#fff 0) 0 0/8px 8px}
-.fminidemo i{position:absolute;inset:-2px;background:var(--cv,#6b8cff);border-radius:2px;
-  transform:scale(0);transform-origin:50% 50%}
-.fill:hover .fminidemo i,.fill:focus-visible .fminidemo i{animation:fSpread 1.9s ease-in-out infinite}
-@keyframes fSpread{0%,8%{transform:scale(0)}50%,80%{transform:scale(1.6)}100%{transform:scale(0)}}
+.fminidemo i{position:absolute;left:50%;top:50%;width:15px;height:15px;border-radius:3px;
+  transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.28)}
+.fminidemo .fbase{background:linear-gradient(135deg,#9aa7bb,#dfe5ee)}
+.fminidemo .fink{background:var(--cv,#6b8cff);opacity:0}
+.fill:hover .fminidemo .fink,.fill:focus-visible .fminidemo .fink{animation:fTint 1.9s ease-in-out infinite}
+@keyframes fTint{0%,10%{opacity:0}45%,85%{opacity:1}100%{opacity:0}}
 
 /* 留白填充：悬停演示「图放在这种底上长什么样」 */
 .fdemo{position:absolute;inset:0;border-radius:9px;opacity:0;transition:opacity .16s;
@@ -496,7 +499,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   <div class="tabs" id="tabs">
     <button id="tab-crop" class="on"><svg class="ic"><use href="#i-crop"/></svg>图片裁剪</button>
     <button id="tab-comp"><svg class="ic"><use href="#i-compress"/></svg>图片压缩</button>
-    <button id="tab-fill"><svg class="ic"><use href="#i-fill"/></svg>透明填色</button>
+    <button id="tab-fill"><svg class="ic"><use href="#i-fill"/></svg>图案填色</button>
   </div>
 
   <!-- ==================== 板块一：图片裁剪 ==================== -->
@@ -833,7 +836,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
   </div><!-- /view-comp -->
 
-  <!-- ==================== 板块三：透明填色 ==================== -->
+  <!-- ==================== 板块三：图案填色 ==================== -->
   <div class="view hidden" id="view-fill">
 
     <div class="two">
@@ -847,8 +850,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         </div>
         <div id="fdrop" class="dz">
           <span class="dz-ic"><svg class="ic"><use href="#i-upload"/></svg></span>
-          <span class="t1">拖入透明 PNG</span>
-          <span class="t2">或点击选择 · 只给透明区铺色，尺寸图案不变</span>
+          <span class="t1">拖入带图案的 PNG</span>
+          <span class="t2">或点击选择 · 只给图案上色，透明区保留，尺寸形状不变</span>
         </div>
       </div>
 
@@ -865,15 +868,15 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
           <div class="line">
             <span class="lb">填充颜色</span>
             <div class="fills" id="fcolorSeg">
-              <button class="fill on" data-v="#ffffff" data-tip="白色"><span class="sw fwhite"></span><span class="fminidemo" style="--cv:#ffffff"><i></i></span></button>
-              <button class="fill" data-v="#000000" data-tip="黑色"><span class="sw fblack"></span><span class="fminidemo" style="--cv:#000000"><i></i></span></button>
-              <button class="fill" data-v="#ff4d4f" data-tip="红色"><span class="sw" style="background:#ff4d4f"></span><span class="fminidemo" style="--cv:#ff4d4f"><i></i></span></button>
-              <button class="fill" data-v="#3f66f5" data-tip="蓝色"><span class="sw" style="background:#3f66f5"></span><span class="fminidemo" style="--cv:#3f66f5"><i></i></span></button>
-              <button class="fill" data-v="#22c55e" data-tip="绿色"><span class="sw" style="background:#22c55e"></span><span class="fminidemo" style="--cv:#22c55e"><i></i></span></button>
-              <button class="fill" data-v="#f59e0b" data-tip="橙色"><span class="sw" style="background:#f59e0b"></span><span class="fminidemo" style="--cv:#f59e0b"><i></i></span></button>
+              <button class="fill on" data-v="#ffffff" data-tip="白色"><span class="sw fwhite"></span><span class="fminidemo" style="--cv:#ffffff"><i class="fbase"></i><i class="fink"></i></span></button>
+              <button class="fill" data-v="#000000" data-tip="黑色"><span class="sw fblack"></span><span class="fminidemo" style="--cv:#000000"><i class="fbase"></i><i class="fink"></i></span></button>
+              <button class="fill" data-v="#ff4d4f" data-tip="红色"><span class="sw" style="background:#ff4d4f"></span><span class="fminidemo" style="--cv:#ff4d4f"><i class="fbase"></i><i class="fink"></i></span></button>
+              <button class="fill" data-v="#3f66f5" data-tip="蓝色"><span class="sw" style="background:#3f66f5"></span><span class="fminidemo" style="--cv:#3f66f5"><i class="fbase"></i><i class="fink"></i></span></button>
+              <button class="fill" data-v="#22c55e" data-tip="绿色"><span class="sw" style="background:#22c55e"></span><span class="fminidemo" style="--cv:#22c55e"><i class="fbase"></i><i class="fink"></i></span></button>
+              <button class="fill" data-v="#f59e0b" data-tip="橙色"><span class="sw" style="background:#f59e0b"></span><span class="fminidemo" style="--cv:#f59e0b"><i class="fbase"></i><i class="fink"></i></span></button>
               <button class="fill" data-v="custom" data-tip="自定义颜色" id="fcolorGrp">
                 <span class="sw fcustom"></span>
-                <span class="fminidemo"><i></i></span>
+                <span class="fminidemo"><i class="fbase"></i><i class="fink"></i></span>
                 <input type="color" id="fcolor" value="#ffffff" onclick="event.stopPropagation()">
               </button>
             </div>
@@ -896,11 +899,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 
         <div class="help" id="fhelp">
           <div class="help-in">
-            把<b>透明区域铺成你选的纯色</b>，图片的尺寸和图案<b>一点都不变</b>——只填透明的地方，不透明的地方原样保留。适合把透明素材变成有底色的图。
+            把 <b>PNG 里的图案统一染成你选的纯色</b>：图片尺寸、图案形状和透明区域<b>一点都不变</b>——只改有图案部分的颜色，空白处继续保持透明。适合把多色素材做成单色剪影。
             <div class="kv">
               <span>填充颜色</span><span>点色块选常用色，或点最后一个用取色器挑任意颜色</span>
-              <span>输出格式</span><span>PNG 无损、色块最干净；JPG / WEBP 体积更小但没有透明通道（反正已填色）</span>
-              <span>不透明图</span><span>没有透明区域的图片填了也看不出变化，属于正常现象</span>
+              <span>输出格式</span><span>PNG / WEBP 保留透明区；JPG 没有透明通道，透明处会自动垫白底</span>
+              <span>半透明边缘</span><span>保留原来的透明度，只换颜色，所以边缘不会变硬</span>
               <span>刷新页面</span><span>图片记录不保存，刷新即清空；颜色等设置会记住</span>
             </div>
           </div>
@@ -1898,9 +1901,9 @@ $('cdl').onclick = async () => {
   $('cstat').innerHTML = `已打包 <b>${ok.length}</b> 张，开始下载`;
 };
 
-/* ==================== 板块三：透明填色 ====================
-   把透明区域铺成纯色，尺寸和图案一个像素都不动：
-   先 fillRect 铺满底色，再 drawImage 叠原图 —— 透明处露底色，不透明处原样覆盖。
+/* ==================== 板块三：图案填色 ====================
+   给 PNG 里的「图案」上色：尺寸和 alpha 通道原样保留，只把非透明像素的 RGB
+   换成选中的纯色 —— 透明区仍然透明，图案的形状/边缘一点都不变。
    跟另外两个板块一样手动触发：没点「开始填色」前只列队占位，点了才真处理。
    fillGen 是世代号：处理中又拖新图/清空就 ++，旧结果作废回列队态。 */
 let fillStarted = false;
@@ -1923,24 +1926,52 @@ function setFgo(mode){
   }
 }
 
-/* 核心：原尺寸画布 → 铺满纯色 → 叠原图 → 导出。绝不缩放，绝不改图案。 */
+function hexRGB(hex){
+  const h = String(hex || '#ffffff').replace('#', '');
+  const full = h.length === 3 ? h.split('').map(x => x + x).join('') : h;
+  const n = parseInt(full, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/* 核心：只给图案上色 —— 尺寸和 alpha 一个字节都不改，
+   把所有 alpha>0 的像素 RGB 换成目标色，透明区保持透明。 */
 async function fillOne(item, c){
   const im = await loadImage(item.file);
   const w = im.naturalWidth, h = im.naturalHeight;
   const cv = document.createElement('canvas');
   cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d');
-  ctx.fillStyle = c.color;
-  ctx.fillRect(0, 0, w, h);
   ctx.drawImage(im, 0, 0, w, h);
+  let data;
+  try{ data = ctx.getImageData(0, 0, w, h); }
+  catch(e){ throw new Error('读不了图片像素'); }
+  const d = data.data;
+  const [cr, cg, cb] = hexRGB(c.color);
+  for(let i = 0; i < d.length; i += 4){
+    if(d[i+3] > 0){                 // alpha>0 才算图案；透明区原样留空
+      d[i] = cr; d[i+1] = cg; d[i+2] = cb;
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+
   const fmt = c.fmt;                                     // 填色板块格式明确，不用 fmtOf
-  const quality = fmt === 'png' ? undefined : 0.92;      // 纯色底+图案，高质量导出避免图案被压坏
-  const blob = await toBlob(cv, fmt, quality);
+  let out = cv;
+  if(fmt === 'jpg'){
+    /* JPG 没有透明通道，直接导出会把透明区压成黑块 → 先垫白底 */
+    const flat = document.createElement('canvas');
+    flat.width = w; flat.height = h;
+    const fx = flat.getContext('2d');
+    fx.fillStyle = '#ffffff'; fx.fillRect(0, 0, w, h);
+    fx.drawImage(cv, 0, 0);
+    out = flat;
+  }
+  const quality = fmt === 'png' ? undefined : 0.92;
+  const blob = await toBlob(out, fmt, quality);
   return {
     name: item.name,
     outName: outName(item.name, fmt),
     blob,
-    thumb: thumbOf(cv, 320),
+    thumb: thumbOf(out, 320),
     w, h, fmt, color: c.color,
     size: blob.size,
     origSize: item.file.size || 0,
@@ -2036,7 +2067,7 @@ function drawFill(){
       : `<span class="chip-i"><svg class="ic"><use href="#i-frame"/></svg>
            <span class="num">尺寸不变 <b>${r.w}×${r.h}</b></span></span>
          <span class="chip-i"><svg class="ic"><use href="#i-fill"/></svg>
-           <span>底色 <b style="color:${esc(r.color)}">${esc(r.color)}</b> · ${r.fmt.toUpperCase()}</span></span>
+           <span>图案色 <b style="color:${esc(r.color)}">${esc(r.color)}</b> · ${r.fmt.toUpperCase()}</span></span>
          <span class="chip-i"><svg class="ic"><use href="#i-file"/></svg>
            <span class="num">输出 <b>${fmtSize(r.size)}</b></span></span>`;
     return `
@@ -2111,7 +2142,7 @@ $('fdl').onclick = async () => {
   if(!ok.length) return;
   $('fstat').textContent = '正在打包…';
   const zip = await buildZip(ok);
-  saveBlob(zip, '图片_透明填色.zip');
+  saveBlob(zip, '图片_图案填色.zip');
   $('fstat').innerHTML = `已打包 <b>${ok.length}</b> 张，开始下载`;
 };
 
